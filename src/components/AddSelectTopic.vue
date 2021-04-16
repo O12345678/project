@@ -308,6 +308,9 @@ export default {
     )
       .then((res) => {
         console.log(res);
+        if( res.data.flag) {
+          this.canDealTopic = false;
+        }
         this.topicData = res.data.topicData;
       })
       .catch((err) => {

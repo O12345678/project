@@ -217,12 +217,14 @@
                       type="text"
                       style="color: #67c23a; font-size: 10px"
                       @click="deal(scope.row, 'state', '已确定')"
+                      :disabled="!canDealTopic"
                       >通过</el-button
                     >
                     <el-button
                       type="text"
                       style="color: #f56c6c; font-size: 10px"
                       @click="deal(scope.row, 'state', '未通过')"
+                      :disabled="!canDealTopic"
                       >退回</el-button
                     >
                   </div>

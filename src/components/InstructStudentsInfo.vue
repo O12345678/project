@@ -6,14 +6,23 @@
     @tab-click="handleTabClick"
     :before-leave="leaveTab"
   >
-    <el-tab-pane name="taskbook" style="height: 400px" class="flex-column-center">
+    <el-tab-pane
+      name="taskbook"
+      style="height: 400px"
+      class="flex-column-center"
+    >
       <span slot="label"
         ><i class="iconfont el-icon-renwushuxiazai"></i> 下发任务书</span
       >
       <div class="flex-row-around" style="height: 300px">
         <el-upload drag action="">
           <i class="el-icon-upload"></i>
-          <div class="el-upload__text">将任务书文件拖到此处，或<em>点击上传</em></div>
+          <div class="el-upload__text">
+            将任务书文件拖到此处，或<em>点击上传</em>
+            <section style="color: #f56c6c; margin-top: 5px">
+              仅可上传一次且不可修改
+            </section>
+          </div>
         </el-upload>
       </div>
     </el-tab-pane>
@@ -88,9 +97,7 @@ export default {
   },
   methods: {
     test() {},
-    leaveTab(activeName, oldActiveName) {
-
-    },
+    leaveTab(activeName, oldActiveName) {},
     handleTabClick(currentTab) {
       console.log(currentTab.name);
     },

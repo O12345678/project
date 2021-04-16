@@ -1,12 +1,13 @@
 <template>
   <div class="root">
     <common-header></common-header>
+    <div id="download"></div>
     <div class="common-body-column">
       <div class="student-top">
         <el-steps
           simple
           style="height: 40px; padding: 5px 40px"
-          process-status="finish"
+          :process-status="processStatus"
           finish-status="success"
           :active="stepActive"
         >
@@ -39,7 +40,7 @@
           @tab-click="tabClick"
           :before-leave="leaveTab"
         >
-          <el-tab-pane label="选题阶段" name="选题阶段" class="student-select">
+          <el-tab-pane label="选题" name="选题" class="student-select">
             <el-collapse-transition>
               <div v-show="!topicShow">
                 <div class="flex-row-between" style="margin-bottom: 20px">
@@ -534,6 +535,7 @@ export default {
       teacherDetailInfoDialogVisible: {
         value: false,
       },
+      processStatus: "finish",
       steps: [
         "选题",
         "开题报告",
@@ -552,7 +554,7 @@ export default {
         "resultinquiry",
       ],
       stepActive: -1,
-      activeName: "选题阶段",
+      activeName: "选题",
       states: ["未满", "已满", "已确定"],
       topicData: [
         // 这里的topic是没有选过的
@@ -721,7 +723,7 @@ export default {
                 type: "warning",
               });
             } else {
-              const tabTaskbook = document.getElementById("tab-选题阶段");
+              const tabTaskbook = document.getElementById("download");
               const a = document.createElement("a");
               // a.style.display = "none";
               a.href = "testapis/TestServlet?path=" + encodeURI(res.data.path);
@@ -775,7 +777,7 @@ export default {
             // 获取信息
           }
         });
-      } else if (activeName == "选题阶段") {
+      } else if (activeName == "选题") {
       } else {
         return request(
           "/QueryCurrentModuleOpenStateServlet",
@@ -794,7 +796,11 @@ export default {
               type: "error",
             });
             return Promise.reject("");
-          } else if (res.data.studentStatus == "未完成") {
+          } else if (
+            this.steps.indexOf(activeName) >
+              this.steps.indexOf(res.data.studentSchedule) &&
+            res.data.studentStatus == "未完成"
+          ) {
             this.$message({
               showClose: true,
               message: "请先完成" + res.data.studentSchedule + "模块！",
@@ -813,22 +819,18 @@ export default {
             return Promise.reject("");
           } else {
             // 获取信息
+            console.log("获取信息！");
+              this.$store.commit({
+                type: "updateActiveModule",
+                activeModule: activeName,
+              });
+            
           }
         });
       }
     },
     tabClick(tab) {
       // 数据库查询开始时间，结束时间 直接赋值给activeModule
-      if (
-        tab.label != "任务书下载" &&
-        tab.label != "选题阶段" &&
-        tab.label != "成绩查询"
-      ) {
-        this.$store.commit({
-          type: "updateActiveModule",
-          activeModule: tab.label,
-        });
-      }
     },
     searchTopic() {
       request(
@@ -991,7 +993,9 @@ export default {
         console.log(res);
         this.topicData = res.data.topicData;
         this.myChoiceTopicData = res.data.myChoiceTopicData;
-
+        this.stepActive = this.steps.indexOf(res.data.studentSchedule); 
+        this.processStatus = res.data.studentStatus == '不合格' ? "error" : "finish"
+        this.activeName = res.data.studentSchedule == null ? '选题' : res.data.studentSchedule;
         if (res.data.studentState == "已确定") {
           this.canChoice = false;
           this.canOperate = false;
