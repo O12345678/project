@@ -97,6 +97,7 @@ export default {
               }
             )
               .then((res) => {
+                console.log(res);
                 if (res.data.isLogin) {
                   sessionStorage.setItem("id", this.userInfo.id);
                   sessionStorage.setItem("role", this.userInfo.role);
@@ -106,9 +107,18 @@ export default {
                   });
                   this.$store.commit({
                     type: "updateUserName",
-                    newName: res.data.name
-                  })
-                  this.$router.push(this.$store.state.user.role);
+                    newName: res.data.name,
+                  });
+                  if (this.userInfo.role != "teacher") {
+                    this.$router.push(this.$store.state.user.role);
+                  } else if (
+                    res.data.endTime != null &&
+                    new Date(res.data.endTime) < new Date().getTime()
+                  ) {
+                    this.$router.push("/teacher/instructstudents");
+                  } else {
+                    this.$router.push("/teacher/addselecttopic");
+                  }
                 } else {
                   this.$message({
                     showClose: true,

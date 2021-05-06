@@ -151,7 +151,7 @@
 <script>
 import { request } from "../network/request";
 import Qs from "qs";
-import { deepCopy } from '../assets/js/utils';
+import { deepCopy } from "../assets/js/utils";
 export default {
   data() {
     return {
@@ -231,14 +231,12 @@ export default {
         if (valid) {
           request(
             "/UpdateStudentServlet",
-            encodeURI(
-              Qs.stringify({
-                info: JSON.stringify(this.info),
-                userId: this.$store.state.user.id,
-                role: "administrator"
-              }),
-              "utf-8"
-            ),
+            Qs.stringify({
+              info: encodeURI(JSON.stringify(this.info), "utf-8"),
+              userId: this.$store.state.user.id,
+              role: "administrator",
+              grade: this.currentAcademicYear - 3
+            }),
             {
               "Content-Type": "application/x-www-form-urlencoded",
             }
@@ -262,18 +260,16 @@ export default {
   },
   watch: {
     dialogShow(val, oldVal) {
-      console.log("dialog---------------------" + val);
       this.isShow = val;
     },
     studentInfo(val, oldVal) {
       deepCopy(this.info, val);
-      console.log("EditStudentInfoDialogInitServlet");
       if (val.id == "") {
         request(
           "/QueryProfessionServlet",
           Qs.stringify({
             id: this.$store.state.user.id,
-            role: "administrator"
+            role: "administrator",
           }),
           {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -281,7 +277,7 @@ export default {
         )
           .then((res) => {
             console.log(res);
-            this.professions = res.data.professions;           
+            this.professions = res.data.professions;
           })
           .catch((err) => {
             console.log(err);

@@ -6,11 +6,11 @@ Vue.use(Vuex)
 const store = new Vuex.Store({
     state: {
         user: {
-            id: "20175308",
-            password: "123456789.",
+            id: "",
+            password: "",
             role: '',
         },
-        userName: '张凤强',
+        userName: '',
         myTopic: {
             id: "",
             name: "",
@@ -53,16 +53,22 @@ const store = new Vuex.Store({
             email: "",
         },
         activeModule: "选题",
-        teacherShowPage: '/teacher/addselecttopic'
-
+        teacherShowPage: '/teacher/addselecttopic',
+        instructStudentInfo:
+        {
+            id: "",
+            name: "",
+            studentId: "",
+            studentName: "",
+        },
     },
     mutations: {
         // 设置id
         // 同步异步需要处理
-        updateUser( state, payload ) {
+        updateUser(state, payload) {
             state.user = payload.newUser;
         },
-        updateUserName( state, payload ) {
+        updateUserName(state, payload) {
             state.userName = payload.newName
         },
         updatePassword(state, payload) {
@@ -74,14 +80,17 @@ const store = new Vuex.Store({
         updateMyTeacher(state, payload) {
             state.myTeacher = payload.newTeacher;
         },
-        updateTeacherMyInfo( state, payload ) {
+        updateTeacherMyInfo(state, payload) {
             state.teacherMyInfo = payload.newInfo;
             console.log("vuex gengxin ")
-            console.log( payload.newInfo);
+            console.log(payload.newInfo);
         },
         updateActiveModule(state, payload) {
-            state.activeModule = payload.activeModule
-        }
+            state.activeModule = payload.activeModule;
+        },
+        updateInstructStudentInfo(state, payload) {
+            state.instructStudentInfo = payload.newInstructStudentInfo;
+        },
     }
 });
 

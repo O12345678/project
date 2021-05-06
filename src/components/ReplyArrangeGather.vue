@@ -1,6 +1,40 @@
 <template>
   <div style="width: 900px">
     <div class="flex-row-between" style="margin-bottom: 20px">
+      专业:
+      <el-select
+        clearable
+        v-model="searchArrange.profession"
+        value-key="id"
+        placeholder="请选择专业"
+        size="small"
+        style="width: 200px"
+        @change="professionChange"
+        filterable
+      >
+        <el-option
+          v-for="(item, index) in professions"
+          :key="index"
+          :value="item"
+        >
+        </el-option>
+      </el-select>
+      班级:
+      <el-select
+        clearable
+        v-model="searchArrange.classNumber"
+        placeholder="请选择班级"
+        size="small"
+        style="width: 150px"
+      >
+        <el-option
+          v-for="(item, index) in classNumbers"
+          :key="index"
+          :value="item"
+          :label="item + '班'"
+        >
+        </el-option>
+      </el-select>
       学生姓名:
       <el-select
         clearable
@@ -11,59 +45,54 @@
         filterable
       >
         <el-option
-          v-for="(item, index) in students"
+          v-for="(item, index) in studentNames"
           :key="index"
-          :value="item.name"
+          :value="item"
         >
         </el-option>
       </el-select>
       答辩老师:
       <el-select
         clearable
-        v-model="searchArrange.teacher1"
+        v-model="searchArrange.replyTeacher"
         placeholder="请输入教师"
         size="small"
         style="width: 150px"
         filterable
       >
         <el-option
-          v-for="(item, index) in teachers"
+          v-for="(item, index) in teacherNames"
           :key="index"
-          :value="item.name"
+          :value="item"
         >
         </el-option>
       </el-select>
+    </div>
+    <div class="flex-row-between" style="margin-bottom: 20px">
       评审老师:
       <el-select
         clearable
-        v-model="searchArrange.teacher2"
+        v-model="searchArrange.reviewTeacher"
         placeholder="请输入教师"
         size="small"
         style="width: 150px"
         filterable
       >
         <el-option
-          v-for="(item, index) in teachers"
+          v-for="(item, index) in teacherNames"
           :key="index"
-          :value="item.name"
+          :value="item"
         >
         </el-option>
       </el-select>
-      <el-button type="primary" size="small" @click="exportFile"
-        >导出</el-button
-      >
-    </div>
-    <div class="flex-row-between" style="margin-bottom: 20px">
       答辩时间:
       <el-date-picker
-        v-model="searchArrange.replyTime"
-        type="datetimerange"
-        range-separator="至"
-        start-placeholder="开始日期"
-        end-placeholder="结束日期"
+        v-model="searchArrange.dateTime"
+        type="datetime"
         size="small"
-        style="width: 360px"
+        style="width: 200px"
         value-format="yyyy-MM-dd HH:mm:ss"
+        placeholder="请选择日期时间"
       >
       </el-date-picker>
       答辩地点:
@@ -83,45 +112,42 @@
     </div>
     <el-table
       style="width: 100%"
-      :height="352"
+      :height="361"
       :data="
         arrangeData.slice(
           (arrangeCurrentPage - 1) * arrangePageSize,
           arrangeCurrentPage * arrangePageSize
         )
       "
+      ref="multipleTable"
       @selection-change="handleSelectionChange"
+      @select-all="handleSelectionAll"
     >
-      <el-table-column
-        type="selection"
-        width="50px"
-        :resizable="false"
-        align="center"
-      >
-      </el-table-column>
       <el-table-column
         align="center"
         :resizable="false"
         label="学生姓名"
-        width="100"
+        width="120"
+        prop="student.name"
       >
+      </el-table-column>
+      <el-table-column label="专业" width="150px" :resizable="false">
         <template slot-scope="scope">
-          <el-popover trigger="hover" placement="top">
-            <p>学号: {{ scope.row.student.id }}</p>
-            <p>姓名: {{ scope.row.student.name }}</p>
-            <p>专业: {{ scope.row.student.profession }}</p>
-            <p>班级: {{ scope.row.student.classNumber + "班" }}</p>
-            <div slot="reference" class="name-wrapper">
-              <el-tag size="small">{{ scope.row.student.name }}</el-tag>
-            </div>
-          </el-popover>
+          <span style="white-space: nowrap">{{
+            scope.row.student.profession
+          }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="班级" width="100px" :resizable="false">
+        <template slot-scope="scope">
+          {{ scope.row.student.classNumber + "班" }}
+        </template></el-table-column
+      >
       <el-table-column
         align="center"
         :resizable="false"
         label="答辩教师"
-        width="100"
+        width="120"
       >
         <template slot-scope="scope">
           <a
@@ -130,11 +156,11 @@
                 teacherDetailInfo,
                 arrangeData[
                   alterPage(arrangeCurrentPage, arrangePageSize, scope.$index)
-                ].teacher1,
+                ].replyTeacher,
                 teacherDetailInfoDialogVisible
               )
             "
-            >{{ scope.row.teacher1.name }}</a
+            >{{ scope.row.replyTeacher.name }}</a
           >
         </template>
       </el-table-column>
@@ -142,7 +168,7 @@
         align="center"
         :resizable="false"
         label="评审教师"
-        width="100"
+        width="120"
       >
         <template slot-scope="scope">
           <a
@@ -151,24 +177,21 @@
                 teacherDetailInfo,
                 arrangeData[
                   alterPage(arrangeCurrentPage, arrangePageSize, scope.$index)
-                ].teacher2,
+                ].reviewTeacher,
                 teacherDetailInfoDialogVisible
               )
             "
-            >{{ scope.row.teacher2.name }}</a
+            >{{ scope.row.reviewTeacher.name }}</a
           >
         </template>
       </el-table-column>
       <el-table-column
+        prop="dateTime"
         :resizable="false"
         label="答辩时间"
         align="center"
-        width="200"
+        width="180"
       >
-        <template slot-scope="scope">
-          {{ scope.row.replyTime[0] }} <br />
-          {{ scope.row.replyTime[1] }}
-        </template>
       </el-table-column>
       <el-table-column
         align="center"
@@ -178,7 +201,7 @@
         min-width="100"
       ></el-table-column>
     </el-table>
-    <div class="pagination" style="margin-top: 15px">
+    <div class="pagination" style="margin-top: 10px">
       <el-pagination
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
@@ -207,6 +230,8 @@ import { alterPage } from "../assets/js/utils.js";
 import { deepCopy } from "../assets/js/utils.js";
 import { querySearchAsync } from "../assets/js/utils.js";
 import { createStateFilter } from "../assets/js/utils.js";
+import { request } from "../network/request";
+import Qs from "qs";
 export default {
   components: {
     "teacher-detail-dialog": TeacherDetailInfoDialog,
@@ -228,33 +253,22 @@ export default {
       },
       searchArrange: {
         student: "",
-        teacher1: "",
-        teacher2: "",
+        replyTeacher: "",
+        reviewTeacher: "",
         place: "",
-        replyTime: [],
+        replyTime: "",
+        profession: "",
+        classNumber: "",
       },
       arrangeCurrentPage: 1,
       arrangePageSize: 7,
-      students: [
-        {
-          id: "",
-          name: "",
-          class: "",
-        },
-      ],
-      teachers: [
-        {
-          id: "",
-          name: "",
-          faculty: "",
-          jobTitle: "",
-          educationLevel: "",
-          academicDegree: "",
-          tel: "",
-          email: "",
-        },
-      ],
-      places: [],
+      currentAcademicYear:
+        new Date().getMonth() + 1 >= 9
+          ? new Date().getFullYear()
+          : new Date().getFullYear() - 1,
+      studentNames: [],
+      teacherNames: [],
+      places: ["6-101", "6-102", "6-103", "6-104", "6-105", "6-106", "6-107"],
       arrangeData: [
         {
           student: {
@@ -263,7 +277,7 @@ export default {
             profession: "",
             classNumber: "",
           },
-          teacher1: {
+          replyTeacher: {
             id: "",
             name: "",
             faculty: "",
@@ -273,7 +287,7 @@ export default {
             tel: "",
             email: "",
           },
-          teacher2: {
+          reviewTeacher: {
             id: "",
             name: "",
             faculty: "",
@@ -284,10 +298,11 @@ export default {
             email: "",
           },
           place: "",
-          replyTime: ["2020-03-02 16:49:00", "2021-03-02 16:49:00"],
+          dateTime: "",
         },
       ],
-      multipleSelection: "",
+      professions: [],
+      classNumbers: [],
     };
   },
   methods: {
@@ -304,129 +319,76 @@ export default {
       this.arrangeCurrentPage = currentPage;
     },
     arrangeQuery() {
-      // this.searchArrange-----------------------------------------------------------
+      request(
+        "/QueryReplyArrangeGatherServlet",
+        Qs.stringify({
+          id: this.$store.state.user.id,
+          role: "administrator",
+          student: this.searchArrange.student,
+          replyTeacher: this.searchArrange.replyTeacher,
+          reviewTeacher: this.searchArrange.reviewTeacher,
+          place: this.searchArrange.place,
+          dateTime: this.searchArrange.dateTime,
+          profession: this.searchArrange.profession,
+          classNumber: this.searchArrange.classNumber,
+        }),
+        {
+          "Content-Type": "application/x-www-form-urlencoded",
+        }
+      )
+        .then((res) => {
+          console.log(res);
+          this.arrangeData = res.data.arrangeData;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
-    handleSelectionChange(val) {
-      // this.multipleSelection = val;
-      console.log(val);
+    professionChange(value) {
+      // 联动
+      this.searchArrange.classNumber = "";
+      this.classNumbers = [];
+      request(
+        "/QueryClassNumberServlet",
+        Qs.stringify({
+          profession: value,
+          grade: this.currentAcademicYear - 3,
+        }),
+        {
+          "Content-Type": "application/x-www-form-urlencoded",
+        }
+      )
+        .then((res) => {
+          this.classNumbers = res.data.classNumbers;
+          console.log(res);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
-    exportFile() {},
   },
   created() {
-    this.arrangeData = [
+    // 初始化专业，初始化所有数据，初始化学生姓名，老师姓名
+    request(
+      "/ReplyArrangeGatherInitServlet",
+      Qs.stringify({
+        id: sessionStorage.getItem("id"),
+        grade: this.currentAcademicYear - 3,
+      }),
       {
-        student: {
-          id: "1",
-          name: "张三",
-          profession: "计算机科学与技术",
-          classNumber: 1,
-        },
-        teacher1: { id: "1", name: "李明", academicDegree: '博士学位', educationLevel: '博士' },
-        teacher2: { id: "2", name: "李刚" },
-        place: "28-A201",
-        replyTime: [],
-      },
-      {
-        student: {
-          id: "2",
-          name: "李四",
-          profession: "计算机科学与技术",
-          classNumber: 3,
-        },
-        teacher1: { id: "1", name: "李明", jobTitle: '副教授'},
-        teacher2: { id: "3", name: "小红", tel: '13645879123'},
-        place: "5-301",
-        replyTime: [],
-      },
-      {
-        student: {
-          id: "3",
-          name: "王二麻子",
-          profession: "信息安全",
-          classNumber: 1,
-        },
-        teacher1: { id: "4", name: "王强" },
-        teacher2: { id: "3", name: "小红" },
-        place: "28-A201",
-        replyTime: [],
-      },
-      {
-        student: {
-          id: "4",
-          name: "马六",
-          profession: "物联网",
-          classNumber: 1,
-        },
-        teacher1: { id: "1", name: "李明" },
-        teacher2: { id: "4", name: "王强" },
-        place: "28-A201",
-        replyTime: [],
-      },
-      {
-        student: {
-          id: "5",
-          name: "李四",
-          profession: "信息安全",
-          classNumber: 2,
-        },
-        teacher1: { id: "2", name: "李刚" },
-        teacher2: { id: "5", name: "李刚" },
-        place: "5-301",
-        replyTime: [],
-      },
-      // "张三"'李四'王二麻子'"马六""李四"
-      // "李明""李刚""小红""王强""李刚"
-    ];
-    this.places = ["28-A201", "5-301"];
-    this.teachers = [
-      {
-        id: "1",
-        name: "李明",
-      },
-      {
-        id: "2",
-        name: "李刚",
-      },
-      {
-        id: "3",
-        name: "小红",
-      },
-      {
-        id: "4",
-        name: "王强",
-      },
-      {
-        id: "5",
-        name: "李刚",
-      },
-    ];
-    this.students = [
-      {
-        id: "1",
-        name: "张三",
-        class: "计算机科学与技术一班",
-      },
-      {
-        id: "2",
-        name: "李四",
-        class: "计算机科学与技术三班",
-      },
-      {
-        id: "3",
-        name: "王二麻子",
-        class: "信息安全一班",
-      },
-      {
-        id: "4",
-        name: "马六",
-        class: "物联网一班",
-      },
-      {
-        id: "5",
-        name: "李四",
-        class: "信息安全二班",
-      },
-    ];
+        "Content-Type": "application/x-www-form-urlencoded",
+      }
+    )
+      .then((res) => {
+        console.log(res);
+        this.teacherNames = res.data.teacherNames;
+        this.studentNames = res.data.studentNames;
+        this.arrangeData = res.data.arrangeData;
+        this.professions = res.data.professions;
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   },
 };
 </script>

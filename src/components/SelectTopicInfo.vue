@@ -276,7 +276,7 @@ export default {
   props: {
     selectTopicInfo: Object,
     canEdit: Boolean,
-    canDealTopic: Boolean
+    canDealTopic: Boolean,
   },
   methods: {
     deepCopy,
@@ -284,27 +284,25 @@ export default {
       this.$emit("update:canEdit", false);
       request(
         "/UpdateSelectTopicServlet",
-        encodeURI(
-          Qs.stringify({
-            id: this.$store.state.user.id,
-            topic: JSON.stringify(this.info),
-          }),
-          "utf-8"
-        ),
+
+        Qs.stringify({
+          id: this.$store.state.user.id,
+          topic: encodeURI(JSON.stringify(this.info), "utf-8"),
+        }),
+
         {
           "Content-Type": "application/x-www-form-urlencoded",
         }
       )
         .then((res) => {
           console.log(res);
-          if( res.data.state == "已结束") {
+          if (res.data.state == "已结束") {
             this.$message({
               message: "选题阶段已结束！",
               type: "warning",
             });
             this.$emit("update:canDealTopic", false);
-          }
-          else if (res.data.state == "已通过") {
+          } else if (res.data.state == "已通过") {
             this.$message({
               message: "题目已通过无法进行修改！",
               type: "warning",
@@ -334,21 +332,28 @@ export default {
       )
         .then((res) => {
           console.log(res);
-          if( res.data.moduleState != null && res.data.moduleState == '已结束') {
+          if (
+            res.data.moduleState != null &&
+            res.data.moduleState == "已结束"
+          ) {
             this.$message({
               message: "选题阶段已结束！",
               type: "warning",
             });
             this.$emit("update:canDealTopic", false);
-          }
-          else if(res.data.topicState != null && res.data.topicState == "已删除") {
+          } else if (
+            res.data.topicState != null &&
+            res.data.topicState == "已删除"
+          ) {
             this.$message({
               showClose: true,
               message: "该课题已被学生取消选择无法执行操作！",
               type: "warning",
             });
-          }
-          else if(res.data.studentState != null && res.data.studentState == "已确定") {
+          } else if (
+            res.data.studentState != null &&
+            res.data.studentState == "已确定"
+          ) {
             this.$message({
               showClose: true,
               message: "该学生已被其他教师确定无法执行操作！",
@@ -356,7 +361,7 @@ export default {
             });
           }
 
-          this.selectStudents = res.data.selectStudents
+          this.selectStudents = res.data.selectStudents;
         })
         .catch((err) => {
           console.log(err);
@@ -367,7 +372,6 @@ export default {
     selectTopicInfo: {
       handler(val, oldVal) {
         if (val == undefined) {
-          console.log("--undefined--");
           this.isUndefined = true;
         } else {
           this.isUndefined = false;
@@ -384,14 +388,13 @@ export default {
             .then((res) => {
               console.log(res);
               this.selectStudents = res.data.selectStudents;
-              if( res.data.flag ) {
+              if (res.data.flag) {
                 this.$emit("update:canDealTopic", false);
               }
             })
             .catch((err) => {
               console.log(err);
             });
-          console.log("--noundefined--");
         }
       },
       deep: true,

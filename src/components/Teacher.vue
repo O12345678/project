@@ -1,6 +1,6 @@
 <template>
   <div class="root">
-    <common-header :isAddSelectTopic.sync="isAddSelectTopic"></common-header>
+    <common-header></common-header>
     <keep-alive>
       <router-view></router-view>
     </keep-alive>
@@ -25,23 +25,12 @@ export default {
 
   data() {
     return {
-      isAddSelectTopic: true,
       currentAcademicYear:
         new Date().getMonth() + 1 >= 9
           ? new Date().getFullYear()
           : new Date().getFullYear() - 1,
     };
   },
-  watch: {
-    isAddSelectTopic(val, oldVal) {
-      if (this.$route.path == "/teacher/addselecttopic" ) {
-        this.$router.push("/teacher/instructstudents");
-      } else if(this.$route.path == "/teacher/instructstudents") {
-        this.$router.push("/teacher/addselecttopic");
-      }
-    },
-  },
-
   created() {
     request(
       "/TeacherInitServlet",
@@ -64,9 +53,9 @@ export default {
           newUser: {
             id: res.data.teacherMyInfo.id,
             password: res.data.teacherMyInfo.password,
-            role: 'teacher',
-          }
-        })
+            role: "teacher",
+          },
+        });
         this.$store.commit({
           type: "updateUserName",
           newName: res.data.teacherMyInfo.name,

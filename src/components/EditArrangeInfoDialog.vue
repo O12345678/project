@@ -72,11 +72,30 @@
           </el-select>
         </el-form-item>
       </div>
-
+      <el-form-item
+        label="答辩时间:"
+        prop="dateTime"
+        :rules="{
+          required: true,
+          message: '答辩时间不能为空',
+          trigger: 'change',
+        }"
+      >
+        <el-date-picker
+          v-model="info.dateTime"
+          type="datetime"
+          size="small"
+          style="width: 200px"
+          value-format="yyyy-MM-dd HH:mm:ss"
+          placeholder="请选择日期时间"
+          key="arrangeDialogDate"
+        >
+        </el-date-picker>
+      </el-form-item>
       <div class="flex-row-between" style="margin: 15px 0 15px">
         <el-form-item
           label="答辩老师:"
-          prop="teacher1.name"
+          prop="replyTeacher.name"
           :rules="{
             required: true,
             message: '答辩老师不能为空',
@@ -85,7 +104,7 @@
         >
           <el-select
             clearable
-            v-model="info.teacher1"
+            v-model="info.replyTeacher"
             value-key="id"
             placeholder="请输入教师"
             size="small"
@@ -102,9 +121,10 @@
             </el-option>
           </el-select>
         </el-form-item>
+
         <el-form-item
           label="评审老师:"
-          prop="teacher2.name"
+          prop="reviewTeacher.name"
           :rules="{
             required: true,
             message: '评审老师不能为空',
@@ -113,7 +133,7 @@
         >
           <el-select
             clearable
-            v-model="info.teacher2"
+            v-model="info.reviewTeacher"
             value-key="id"
             placeholder="请输入教师"
             size="small"
@@ -131,28 +151,6 @@
           </el-select>
         </el-form-item>
       </div>
-      <el-form-item
-        label="答辩时间:"
-        prop="replyTime[0]"
-        :rules="{
-          required: true,
-          message: '答辩时间不能为空',
-          trigger: 'change',
-        }"
-      >
-        <el-date-picker
-          v-model="info.replyTime"
-          type="datetimerange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          size="small"
-          style="width: 360px"
-          value-format="yyyy-MM-dd HH:mm:ss"
-          key="arrangeDialogDate"
-        >
-        </el-date-picker>
-      </el-form-item>
     </el-form>
     <div slot="footer" class="dialog-footer">
       <el-button @click="quitEditArrange">取 消</el-button>
@@ -162,11 +160,43 @@
 </template>
 
 <script>
+import { deepCopy } from "../assets/js/utils";
+import { request } from "../network/request";
+import Qs from "qs";
 export default {
   data() {
     return {
-      info: this.arrangeInfo,
-      isShow: this.editArrangeDialogVisible,
+      info: {
+        student: {
+          id: "",
+          name: "",
+          profession: "",
+          classNumber: "",
+        },
+        replyTeacher: {
+          id: "",
+          name: "",
+          faculty: "",
+          jobTitle: "",
+          educationLevel: "",
+          academicDegree: "",
+          tel: "",
+          email: "",
+        },
+        reviewTeacher: {
+          id: "",
+          name: "",
+          faculty: "",
+          jobTitle: "",
+          educationLevel: "",
+          academicDegree: "",
+          tel: "",
+          email: "",
+        },
+        place: "",
+        dateTime: "",
+      },
+      isShow: false,
       teachers: [
         {
           id: "",
@@ -179,7 +209,7 @@ export default {
           email: "",
         },
       ],
-      places: ["28-A205"],
+      places: ["6-101", "6-102", "6-103", "6-104", "6-105", "6-106", "6-107"],
       withoutArrangeStudents: [
         {
           id: "",
@@ -188,32 +218,40 @@ export default {
           classNumber: "",
         },
       ],
+      currentAcademicYear:
+        new Date().getMonth() + 1 >= 9
+          ? new Date().getFullYear()
+          : new Date().getFullYear() - 1,
     };
   },
   props: {
     arrangeInfo: Object,
     editArrangeDialogVisible: Boolean,
     canEditArrangeStudent: Boolean,
-    arrangeCurrentIndex: Number,
     refreshOperation: Number,
   },
   methods: {
     submitEditArrange() {
-      console.log("go");
       this.$refs["info"].validate((valid) => {
         if (valid) {
-          console.log("submit");
-          this.isShow = false;
-          this.$emit("update:editArrangeDialogVisible", this.isShow);
-          if (this.arrangeCurrentIndex >= 0) {
-            // 修改数据库 this.info-----------------------------------------------------------
-            this.$emit("update:refreshOperation", 0);
-          } else {
-            console.log(this.info);
-            // 添加数据库 this.info-----------------------------------------------------------
-            this.$emit("update:refreshOperation", 1);
-          }
-          console.log( "info", this.info );
+          request(
+            "/UpdateReplyArrangeServlet",
+            Qs.stringify({
+              info: encodeURI(JSON.stringify(this.info), "utf-8"),
+            }),
+            {
+              "Content-Type": "application/x-www-form-urlencoded",
+            }
+          )
+            .then((res) => {
+              this.checkData = res.data.checkData;
+              this.$emit("update:refreshOperation", 1);
+              console.log(res);
+            })
+            .catch((err) => {
+              console.log(err);
+            });
+          this.$emit("update:editArrangeDialogVisible", false);
         } else {
           console.log("error");
           return false;
@@ -223,82 +261,51 @@ export default {
     quitEditArrange() {
       this.isShow = false;
       this.$emit("update:editArrangeDialogVisible", this.isShow);
-      console.log("quit");
     },
   },
   watch: {
     editArrangeDialogVisible: {
       handler(val, oldVal) {
         this.isShow = val;
+        if( val == true ) {
+          request(
+            "/EditArrangeInfoDialogInitServlet",
+            Qs.stringify({
+              id: this.$store.state.user.id,
+              role: "leader",
+              grade: this.currentAcademicYear - 3
+            }),
+            {
+              "Content-Type": "application/x-www-form-urlencoded",
+            }
+          )
+            .then((res) => {
+              console.log(res);
+              this.withoutArrangeStudents = res.data.withoutArrangeStudents;
+              this.teachers = res.data.teachers;
+            })
+            .catch((err) => {
+              console.log(err);
+            });
+        }
       },
       deep: true,
     },
     arrangeInfo: {
       handler(val, oldVal) {
-        console.log("new--", val);
-        this.info = val;
+        deepCopy(this.info, val);
       },
       deep: true,
     },
-  },
-  mounted() {
-    this.teachers = [
-      {
-        id: "1",
-        name: "李明",
-      },
-      {
-        id: "2",
-        name: "李刚",
-      },
-      {
-        id: "3",
-        name: "小红",
-      },
-      {
-        id: "4",
-        name: "王强",
-      },
-      {
-        id: "5",
-        name: "李刚",
-      },
-    ];
-    this.withoutArrangeStudents = [
-      {
-        id: "1",
-        name: "张三",
-        profession: "计算机科学与技术",
-        classNumber: 1,
-      },
-      {
-        id: "2",
-        name: "李四",
-        profession: "计算机科学与技术",
-        classNumber: 3,
-      },
-      {
-        id: "3",
-        name: "王二麻子",
-        profession: "信息安全",
-        classNumber: 1,
-      },
-      {
-        id: "4",
-        name: "马六",
-        profession: "物联网",
-        classNumber: 1,
-      },
-      {
-        id: "5",
-        name: "李四",
-        profession: "信息安全",
-        classNumber: 2,
-      },
-    ];
   },
 };
 </script>
 
 <style>
+.edit-arrange-info {
+  width: 550px;
+}
+.edit-arrange-info .el-dialog__body {
+  padding-bottom: 0;
+}
 </style>

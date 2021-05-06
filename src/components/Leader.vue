@@ -389,7 +389,7 @@
                 filterable
               >
                 <el-option
-                  v-for="(item, index) in withoutArrangeStudentNames"
+                  v-for="(item, index) in studentNames"
                   :key="index"
                   :value="item"
                 >
@@ -398,7 +398,7 @@
               答辩老师:
               <el-select
                 clearable
-                v-model="searchArrange.teacher1"
+                v-model="searchArrange.replyTeacher"
                 placeholder="请输入教师"
                 size="small"
                 style="width: 150px"
@@ -414,7 +414,7 @@
               评审老师:
               <el-select
                 clearable
-                v-model="searchArrange.teacher2"
+                v-model="searchArrange.reviewTeacher"
                 placeholder="请输入教师"
                 size="small"
                 style="width: 150px"
@@ -434,7 +434,7 @@
             <div class="leader-pane-top">
               答辩时间:
               <el-date-picker
-                v-model="searchArrange.replyTime"
+                v-model="searchArrange.dateTime"
                 type="datetime"
                 size="small"
                 style="width: 200px"
@@ -456,13 +456,18 @@
                 >
                 </el-option>
               </el-select>
-              <el-button
-                type="primary"
-                size="small"
-                @click="arrangeEdit(-1)"
+              <el-upload
+                action="/apis/ImportReplyArrangeServlet"
                 style="margin-left: 10px"
-                >按班级批量添加</el-button
+                :show-file-list="false"
+                :before-upload="handleBeforeImport"
+                :on-success="handleImportSuccess"
+                accept=".xls, .xlsx"
+                :data="extraData"
               >
+                <el-button type="primary" size="small">导入答辩安排</el-button>
+              </el-upload>
+
               <el-button type="primary" size="small" @click="arrangeEdit(-1)"
                 >添加</el-button
               >
@@ -497,8 +502,6 @@
               >
                 <template slot-scope="scope">
                   <el-popover trigger="hover" placement="top">
-                    <p>年级: {{ scope.row.student.grade }}</p>
-                    <p>姓名: {{ scope.row.student.name }}</p>
                     <p>专业: {{ scope.row.student.profession }}</p>
                     <p>班级: {{ scope.row.student.classNumber + "班" }}</p>
                     <div slot="reference" class="name-wrapper">
@@ -524,11 +527,11 @@
                             queryPageSize,
                             scope.$index
                           )
-                        ].teacher1,
+                        ].replyTeacher,
                         teacherDetailInfoDialogVisible
                       )
                     "
-                    >{{ scope.row.teacher1.name }}</a
+                    >{{ scope.row.replyTeacher.name }}</a
                   >
                 </template>
               </el-table-column>
@@ -549,11 +552,11 @@
                             queryPageSize,
                             scope.$index
                           )
-                        ].teacher2,
+                        ].reviewTeacher,
                         teacherDetailInfoDialogVisible
                       )
                     "
-                    >{{ scope.row.teacher2.name }}</a
+                    >{{ scope.row.reviewTeacher.name }}</a
                   >
                 </template>
               </el-table-column>
@@ -564,7 +567,7 @@
                 width="200"
               >
                 <template slot-scope="scope">
-                  {{ scope.row.replyTime }}
+                  {{ scope.row.dateTime }}
                 </template>
               </el-table-column>
               <el-table-column
@@ -864,7 +867,7 @@
               学生姓名:
               <el-select
                 clearable
-                v-model="searchInfo.student"
+                v-model="searchInfo.studentName"
                 placeholder="请输入学生姓名"
                 size="small"
                 style="width: 150px"
@@ -881,7 +884,7 @@
               专业:
               <el-select
                 clearable
-                v-model="searchInfo.class.profession"
+                v-model="searchInfo.profession"
                 value-key="id"
                 placeholder="请选择专业"
                 size="small"
@@ -899,7 +902,7 @@
               班级:
               <el-select
                 clearable
-                v-model="searchInfo.class.classNumber"
+                v-model="searchInfo.classNumber"
                 placeholder="请选择班级"
                 size="small"
                 style="width: 150px"
@@ -927,7 +930,7 @@
                 v-model="searchInfo.topic"
                 clearable
                 size="small"
-                style="width: 250px"
+                style="width: 220px"
               >
               </el-input>
               指导教师:
@@ -936,7 +939,7 @@
                 v-model="searchInfo.teacher"
                 placeholder="请输入教师"
                 size="small"
-                style="width: 150px"
+                style="width: 120px"
                 filterable
               >
                 <el-option
@@ -952,10 +955,25 @@
                 v-model="searchInfo.progress"
                 placeholder="请选择进度"
                 size="small"
-                style="width: 150px"
+                style="width: 120px"
               >
                 <el-option
                   v-for="(item, index) in progresses"
+                  :key="index"
+                  :value="item"
+                >
+                </el-option>
+              </el-select>
+              状态:
+              <el-select
+                clearable
+                v-model="searchInfo.status"
+                placeholder="请选择状态"
+                size="small"
+                style="width: 120px"
+              >
+                <el-option
+                  v-for="(item, index) in states"
                   :key="index"
                   :value="item"
                 >
@@ -994,7 +1012,9 @@
               </el-table-column>
               <el-table-column label="专业" width="150px" :resizable="false">
                 <template slot-scope="scope">
-                  {{ scope.row.student.profession }}
+                  <span style="white-space: nowrap">{{
+                    scope.row.student.profession
+                  }}</span>
                 </template>
               </el-table-column>
               <el-table-column label="班级" width="100px" :resizable="false">
@@ -1003,13 +1023,14 @@
                 </template></el-table-column
               >
               <el-table-column
-                prop="topic"
                 label="题目"
-                min-width="200px"
+                min-width="100px"
                 :resizable="false"
               >
                 <template slot-scope="scope">
                   <a
+                    style="white-space: nowrap"
+                    v-if="scope.row.name != null"
                     @click="
                       showDetailInfoDialog(
                         topicDetailInfo,
@@ -1025,6 +1046,7 @@
                     "
                     >{{ scope.row.name }}</a
                   >
+                  <span v-else>暂无</span>
                 </template>
               </el-table-column>
               <el-table-column
@@ -1035,6 +1057,7 @@
               >
                 <template slot-scope="scope">
                   <a
+                    v-if="scope.row.teacher.id != null"
                     @click="
                       showDetailInfoDialog(
                         teacherDetailInfo,
@@ -1050,15 +1073,37 @@
                     "
                     >{{ scope.row.teacher.name }}</a
                   >
+                  <span v-else>暂无</span>
                 </template>
               </el-table-column>
               <el-table-column
-                prop="progress"
                 label="进度"
                 width="100px"
                 align="center"
                 :resizable="false"
-              ></el-table-column>
+              >
+                <template slot-scope="scope">
+                  <span>{{
+                    scope.row.student.progress == null
+                      ? "暂无"
+                      : scope.row.student.progress
+                  }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column
+                label="状态"
+                width="100px"
+                align="center"
+                :resizable="false"
+              >
+                <template slot-scope="scope">
+                  <span>{{
+                    scope.row.student.status == null
+                      ? "暂无"
+                      : scope.row.student.status
+                  }}</span>
+                </template>
+              </el-table-column>
             </el-table>
             <div class="pagination">
               <el-pagination
@@ -1092,7 +1137,6 @@
       :arrangeInfo.sync="arrangeInfo"
       :editArrangeDialogVisible.sync="editArrangeDialogVisible"
       :canEditArrangeStudent.sync="canEditArrangeStudent"
-      :arrangeCurrentIndex.sync="arrangeCurrentIndex"
       :refreshOperation.sync="refreshOperation"
     ></edit-arrange-info-dialog>
   </div>
@@ -1233,6 +1277,7 @@ export default {
           classNumber: "",
         },
       ],
+      studentNames: [],
       teacherNames: [],
       teachers: [
         {
@@ -1246,23 +1291,15 @@ export default {
           email: "",
         },
       ],
-      places: [],
+      places: ["6-101", "6-102", "6-103", "6-104", "6-105", "6-106", "6-107"],
       searchArrange: {
         student: "",
-        teacher1: "",
-        teacher2: "",
+        replyTeacher: "",
+        reviewTeacher: "",
         place: "",
-        replyTime: "",
+        dateTime: "",
       },
-      withoutArrangeStudents: [
-        {
-          id: "",
-          name: "",
-          profession: "",
-          classNumber: "",
-        },
-      ],
-
+      loading: null,
       arrangeData: [
         {
           student: {
@@ -1271,7 +1308,7 @@ export default {
             profession: "",
             classNumber: "",
           },
-          teacher1: {
+          replyTeacher: {
             id: "",
             name: "",
             faculty: "",
@@ -1281,7 +1318,7 @@ export default {
             tel: "",
             email: "",
           },
-          teacher2: {
+          reviewTeacher: {
             id: "",
             name: "",
             faculty: "",
@@ -1292,7 +1329,7 @@ export default {
             email: "",
           },
           place: "",
-          replyTime: "2020-03-02 16:49:00",
+          dateTime: "",
         },
       ],
       arrangeInfo: {
@@ -1302,7 +1339,7 @@ export default {
           profession: "",
           classNumber: "",
         },
-        teacher1: {
+        replyTeacher: {
           id: "",
           name: "",
           faculty: "",
@@ -1312,7 +1349,7 @@ export default {
           tel: "",
           email: "",
         },
-        teacher2: {
+        reviewTeacher: {
           id: "",
           name: "",
           faculty: "",
@@ -1323,10 +1360,13 @@ export default {
           email: "",
         },
         place: "",
-        replyTime: "2020-03-02 16:49:00",
+        dateTime: "",
+      },
+      extraData: {
+        id: "",
+        role: "",
       },
       editArrangeDialogVisible: false,
-      arrangeCurrentIndex: -1,
       canEditArrangeStudent: true,
       refreshOperation: -1,
       arrangeCurrentPage: 1,
@@ -1354,18 +1394,18 @@ export default {
         mentor: undefined,
       },
       searchInfo: {
-        name: "",
-        class: {
-          profession: "",
-          classNumber: "",
-        },
+        studentName: "",
+        profession: "",
+        classNumber: "",
         topic: "",
         teacher: "",
         progress: "",
+        status: "",
       },
       professions: [],
       classNumbers: [],
-      progresses: [],
+      progresses: ["选题", "开题报告", "中期检查", "毕业设计", "毕业论文"],
+      states: ["未完成", "已完成", "不合格"],
       queryPageSize: 6,
       queryCurrentPage: 1,
       currentAcademicYear:
@@ -1389,6 +1429,8 @@ export default {
             name: "",
             profession: "",
             classNumber: "",
+            progress: "",
+            status: "",
           },
           teacher: {
             id: "",
@@ -1431,7 +1473,6 @@ export default {
     },
     edit() {
       this.readonly = false;
-      // console.log( this.$refs.inputtel);
       this.$refs.inputtel[0].focus();
     },
     blur() {
@@ -1470,7 +1511,6 @@ export default {
       return false;
     },
     startModule(module) {
-      console.log(module);
       if (
         module.id == 1 &&
         (this.stuMaxSelectNum == undefined ||
@@ -1478,7 +1518,6 @@ export default {
           this.topicMaxSelectNum == undefined ||
           this.topicMaxSelectNum == null)
       ) {
-        console.log("限选数");
         this.$message({
           message: "限选数不能为空！",
           type: "warning",
@@ -1509,17 +1548,16 @@ export default {
       } else {
         request(
           "/StartModuleServlet",
-          encodeURI(
-            Qs.stringify({
-              id: this.$store.state.user.id,
-              role: "leader",
-              planArrange: JSON.stringify(module),
-              stuMaxSelectNum: this.stuMaxSelectNum,
-              topicMaxSelectNum: this.topicMaxSelectNum,
-              grade: this.currentAcademicYear - 3
-            }),
-            "utf-8"
-          ),
+
+          Qs.stringify({
+            id: this.$store.state.user.id,
+            role: "leader",
+            planArrange: encodeURI(JSON.stringify(module), "utf-8"),
+            stuMaxSelectNum: this.stuMaxSelectNum,
+            topicMaxSelectNum: this.topicMaxSelectNum,
+            grade: this.currentAcademicYear - 3,
+          }),
+
           {
             "Content-Type": "application/x-www-form-urlencoded",
           }
@@ -1573,7 +1611,6 @@ export default {
     //     });
     // },
     checkQuery() {
-      console.log(this.$store.state.user.id + "-------------");
       request(
         "/QueryTopicCheckServlet",
         Qs.stringify({
@@ -1594,12 +1631,9 @@ export default {
           console.log(err);
         });
       // checkData = 数据库返回数据-----------------------------------------------------------
-      console.log("info ---- ", this.topicDetailInfo);
-      console.log(this.topicDetailInfoDialogVisible);
     },
     deal(graduationProject, approvalStatus, value) {
       //数据库修改 graduationProject可以获取id...-----------------------------------------------------------
-      console.log(graduationProject.approvalStatus + "---------------------");
       request(
         "/UpdateTopicCheckServlet",
         Qs.stringify({
@@ -1632,38 +1666,129 @@ export default {
       graduationProject[approvalStatus] = value;
       // 评语
     },
+    handleBeforeImport(file) {
+      let extension = file.name.substring(file.name.lastIndexOf(".") + 1);
+      if (extension != "xls" && extension != "xlsx") {
+        this.$message({
+          showClose: true,
+          message: "仅支持.xls或.xlsx文件！",
+          type: "warning",
+        });
+        return false;
+      }
+      this.extraData.id = this.$store.state.user.id;
+      this.extraData.role = "leader";
+      this.loading = this.$loading({
+        lock: true,
+        text: "Loading",
+        spinner: "el-icon-loading",
+        background: "rgba(0, 0, 0, 0.7)",
+      });
+    },
+    handleImportSuccess(response, file, fileList) {
+      console.log(response);
+      this.arrangeData = response.arrangeData;
+      this.loading.close();
+    },
     arrangeQuery() {
-      // this.searchArrange-----------------------------------------------------------
+      request(
+        "/QueryReplyArrangeServlet",
+        Qs.stringify({
+          id: this.$store.state.user.id,
+          role: "leader",
+          student: this.searchArrange.student,
+          replyTeacher: this.searchArrange.replyTeacher,
+          reviewTeacher: this.searchArrange.reviewTeacher,
+          place: this.searchArrange.place,
+          dateTime: this.searchArrange.dateTime,
+        }),
+        {
+          "Content-Type": "application/x-www-form-urlencoded",
+        }
+      )
+        .then((res) => {
+          this.arrangeData = res.data.arrangeData;
+          console.log(res);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
     arrangeEdit(index) {
       this.canEditArrangeStudent = true;
-      this.arrangeCurrentIndex = index;
       this.refreshOperation = -1;
       if (index >= 0) {
-        console.log(this.arrangeInfo);
         this.deepCopy(this.arrangeInfo, this.arrangeData[index]);
         this.canEditArrangeStudent = false;
+      } else {
+        this.arrangeInfo = {
+          student: {
+            id: "",
+            name: "",
+            profession: "",
+            classNumber: "",
+          },
+          replyTeacher: {
+            id: "",
+            name: "",
+            faculty: "",
+            jobTitle: "",
+            educationLevel: "",
+            academicDegree: "",
+            tel: "",
+            email: "",
+          },
+          reviewTeacher: {
+            id: "",
+            name: "",
+            faculty: "",
+            jobTitle: "",
+            educationLevel: "",
+            academicDegree: "",
+            tel: "",
+            email: "",
+          },
+          place: "",
+          dateTime: "",
+        };
       }
       this.editArrangeDialogVisible = true;
     },
     arrangeDelete(index) {
-      // 数据库删除 先获取id值 在执行下面语句
-      // this.arrangeData[index].student.id   更新withoutArrangeStudents-----------------------------------------------------------
-      this.arrangeData.splice(index, 1);
+      request(
+        "/DeleteReplyArrangeServlet",
+        Qs.stringify({
+          id: this.$store.state.user.id,
+          role: "leader",
+          student: this.searchArrange.student,
+          replyTeacher: this.searchArrange.replyTeacher,
+          reviewTeacher: this.searchArrange.reviewTeacher,
+          place: this.searchArrange.place,
+          dateTime: this.searchArrange.dateTime,
+          studentId: this.arrangeData[index].student.id
+        }),
+        {
+          "Content-Type": "application/x-www-form-urlencoded",
+        }
+      )
+        .then((res) => {
+          this.arrangeData = res.data.arrangeData;
+          console.log(res);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
     addIndicator() {
       if (this.canAdd(this.indicator, -1)) {
         this.indicator.id = new Date().getTime() + this.$store.state.user.id;
-        console.log(this.indicator);
         request(
           "/AddIndicatorServket",
-          encodeURI(
-            Qs.stringify({
-              id: this.$store.state.user.id,
-              indicator: JSON.stringify(this.indicator),
-            }),
-            "utf-8"
-          ),
+
+          Qs.stringify({
+            id: this.$store.state.user.id,
+            indicator: encodeURI(JSON.stringify(this.indicator), "utf-8"),
+          }),
 
           {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -1724,8 +1849,6 @@ export default {
           num <= this.indicators[i].grades[1] &&
           index != i
         ) {
-          console.log(num);
-          console.log(this.indicators[i]);
           return true;
         }
       }
@@ -1736,12 +1859,14 @@ export default {
         if (this.canAdd(this.indicators[index], index)) {
           request(
             "/UpdateIndicatorServlet",
-            encodeURI(
-              Qs.stringify({
-                indicator: JSON.stringify(this.indicators[index]),
-              }),
-              "utf-8"
-            ),
+
+            Qs.stringify({
+              indicator: encodeURI(
+                JSON.stringify(this.indicators[index]),
+                "utf-8"
+              ),
+            }),
+
             {
               "Content-Type": "application/x-www-form-urlencoded",
             }
@@ -1825,13 +1950,15 @@ export default {
       } else {
         request(
           "/UpdateGradeDistributionServlet",
-          encodeURI(
-            Qs.stringify({
-              id: this.$store.state.user.id,
-              gradeDistribution: JSON.stringify(this.gradeDistribution),
-            }),
-            "utf-8"
-          ),
+
+          Qs.stringify({
+            id: this.$store.state.user.id,
+            gradeDistribution: encodeURI(
+              JSON.stringify(this.gradeDistribution),
+              "utf-8"
+            ),
+          }),
+
           {
             "Content-Type": "application/x-www-form-urlencoded",
           }
@@ -1886,14 +2013,37 @@ export default {
     },
     query() {
       // 查询数据库 传递searchInfo
+      request(
+        "/QueryProgressServlet",
+        Qs.stringify({
+          studentName: this.searchInfo.studentName,
+          profession: this.searchInfo.profession,
+          classNumber: this.searchInfo.classNumber,
+          topic: this.searchInfo.topic,
+          teacher: this.searchInfo.teacher,
+          progress: this.searchInfo.progress,
+          status: this.searchInfo.status,
+          id: this.$store.state.user.id,
+          grade: this.currentAcademicYear - 3,
+        }),
+        {
+          "Content-Type": "application/x-www-form-urlencoded",
+        }
+      )
+        .then((res) => {
+          this.infos = res.data.infos;
+          console.log(res);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
     professionChange(value) {
       // 联动
 
-      this.searchInfo.class.classNumber = "";
+      this.searchInfo.classNumber = "";
       this.classNumbers = [];
 
-      console.log(value);
       request(
         "/QueryClassNumberServlet",
         Qs.stringify({
@@ -1943,7 +2093,6 @@ export default {
     )
       .then((res) => {
         console.log(res);
-        console.log(this.$store.state.userName);
         this.information = res.data.information;
         this.$store.commit({
           type: "updateUserName",
@@ -1964,8 +2113,6 @@ export default {
         this.students = res.data.students;
         this.teacherNames = res.data.teacherNames;
         this.teachers = res.data.teachers;
-        this.withoutArrangeStudentNames = res.data.withoutArrangeStudentNames;
-        this.withoutArrangeStudents = res.data.withoutArrangeStudents;
         this.indicators = res.data.indicators;
         this.stuMaxSelectNum =
           res.data.maxOptionalNumber.stuMaxSelectNum == null
@@ -1995,304 +2142,22 @@ export default {
               ? undefined
               : res.data.gradeDistribution.mentor;
         }
-
+        this.arrangeData = res.data.arrangeData;
         this.professions = res.data.professions;
+        this.infos = res.data.infos;
       })
       .catch((err) => {
         console.log(err);
       });
-    // 数据库
-    //   this.progresses = ["未完成", "完成"];
-    //   this.professions = ["计算机科学与技术", "信息安全", "物联网工程"];
-    //   this.indicators = [
-    //     {
-    //       id: "1",
-    //       grades: [0, 60],
-    //       indexContent:
-    //         "能独立查阅文献以及从事其它形式的调研，能较好地理解课题任务并案能独立查阅文献以及从事其它形式的调研能较好地理解课题任务并案",
-    //       canEdit: false,
-    //     },
-    //     {
-    //       id: "2",
-    //       grades: [60, 70],
-    //       indexContent:
-    //         "能独立查阅文献以及从事其它形式的调研，能较好地理解课题任务并案",
-    //       canEdit: false,
-    //     },
-    //     {
-    //       id: "3",
-    //       grades: [70, 80],
-    //       indexContent:
-    //         "能独立查阅文献以及从事其它形式的调研，能较好地理解课题任务并案",
-    //       canEdit: false,
-    //     },
-    //     {
-    //       id: "4",
-    //       grades: [80, 90],
-    //       indexContent:
-    //         "能独立查阅文献以及从事其它形式的调研，能较好地理解课题任务并案",
-    //       canEdit: false,
-    //     },
-    //     {
-    //       id: "5",
-    //       grades: [90, 100],
-    //       indexContent:
-    //         "能独立查阅文献以及从事其它形式的调研，能较好地理解课题任务并案",
-    //       canEdit: false,
-    //     },
-    //     {
-    //       id: "5",
-    //       grades: [90, 100],
-    //       indexContent:
-    //         "能独立查阅文献以及从事其它形式的调研，能较好地理解课题任务并案",
-    //       canEdit: false,
-    //     },
-    //     {
-    //       id: "5",
-    //       grades: [90, 100],
-    //       indexContent:
-    //         "能独立查阅文献以及从事其它形式的调研，能较好地理解课题任务并案",
-    //       canEdit: false,
-    //     },
-    //     {
-    //       id: "5",
-    //       grades: [90, 100],
-    //       indexContent:
-    //         "能独立查阅文献以及从事其它形式的调研，能较好地理解课题任务并案",
-    //       canEdit: false,
-    //     },
-    //   ];
-    //   this.places = ["28-A201", "5-301"];
-    //   this.infos = [
-    //     {
-    //       student: {
-    //         id: "1",
-    //         name: "张三",
-    //         profession: "计算机科学与技术",
-    //         classNumber: 1,
-    //       },
-
-    //       name: "高校毕业设计管理系统",
-    //       teacher: {
-    //         id: "1",
-    //         name: "李明",
-    //       },
-    //       progress: "已完成",
-    //     },
-    //   ];
-    //   this.teachers = [
-    //     {
-    //       id: "1",
-    //       name: "李明",
-    //     },
-    //     {
-    //       id: "2",
-    //       name: "李刚",
-    //     },
-    //     {
-    //       id: "3",
-    //       name: "小红",
-    //     },
-    //     {
-    //       id: "4",
-    //       name: "王强",
-    //     },
-    //     {
-    //       id: "5",
-    //       name: "李刚",
-    //     },
-    //   ];
-    //   this.students = [
-    //     {
-    //       id: "1",
-    //       name: "张三",
-    //       profession: "计算机科学与技术",
-    //       classNumber: 1,
-    //     },
-    //     {
-    //       id: "2",
-    //       name: "李四",
-    //       profession: "计算机科学与技术",
-    //       classNumber: 3,
-    //     },
-    //     {
-    //       id: "3",
-    //       name: "王二麻子",
-    //       profession: "信息安全",
-    //       classNumber: 1,
-    //     },
-    //     {
-    //       id: "4",
-    //       name: "马六",
-    //       profession: "物联网",
-    //       classNumber: 1,
-    //     },
-    //     {
-    //       id: "5",
-    //       name: "李四",
-    //       profession: "信息安全",
-    //       classNumber: 2,
-    //     },
-    //   ];
-
-    //   this.arrangeData = [
-    //     {
-    //       student: {
-    //         id: "1",
-    //         name: "张三",
-    //         profession: "计算机科学与技术",
-    //         classNumber: 1,
-    //       },
-    //       teacher1: { id: "1", name: "李明" },
-    //       teacher2: { id: "2", name: "李刚" },
-    //       place: "28-A201",
-    //       replyTime: [],
-    //     },
-    //     {
-    //       student: {
-    //         id: "2",
-    //         name: "李四",
-    //         profession: "计算机科学与技术",
-    //         classNumber: 3,
-    //       },
-    //       teacher1: { id: "1", name: "李明" },
-    //       teacher2: { id: "3", name: "小红" },
-    //       place: "5-301",
-    //       replyTime: [],
-    //     },
-    //     {
-    //       student: {
-    //         id: "3",
-    //         name: "王二麻子",
-    //         profession: "信息安全",
-    //         classNumber: 1,
-    //       },
-    //       teacher1: { id: "4", name: "王强" },
-    //       teacher2: { id: "3", name: "小红" },
-    //       place: "28-A201",
-    //       replyTime: [],
-    //     },
-    //     {
-    //       student: {
-    //         id: "4",
-    //         name: "马六",
-    //         profession: "物联网",
-    //         classNumber: 1,
-    //       },
-    //       teacher1: { id: "1", name: "李明" },
-    //       teacher2: { id: "4", name: "王强" },
-    //       place: "28-A201",
-    //       replyTime: [],
-    //     },
-    //     {
-    //       student: {
-    //         id: "5",
-    //         name: "李四",
-    //         profession: "信息安全",
-    //         classNumber: 2,
-    //       },
-    //       teacher1: { id: "2", name: "李刚" },
-    //       teacher2: { id: "5", name: "李刚" },
-    //       place: "5-301",
-    //       replyTime: [],
-    //     },
-    //     // "张三"'李四'王二麻子'"马六""李四"
-    //     // "李明""李刚""小红""王强""李刚"
-    //   ];
-    //   this.dateItems = [
-    //     {
-    //       title: "选题",
-    //       startTime: "",
-    //       endTime: "",
-    //     },
-    //     {
-    //       title: "开题",
-    //       startTime: "",
-    //       endTime: "",
-    //     },
-    //     {
-    //       title: "中期",
-    //       startTime: "",
-    //       endTime: "",
-    //     },
-    //     {
-    //       title: "毕业设计",
-    //       startTime: "",
-    //       endTime: "",
-    //     },
-    //   ];
-    //   this.checkData = [
-    //     {
-    //       id: "1",
-    //       name: "高校毕业设计管理系统",
-    //       content: "ghhhhhhhhhhhh",
-    //       require: "okikjiuiiiiiiiiiii",
-    //       teacher: { id: "1", name: "李明", jobTitle: "副教授" },
-    //       remark:
-    //         "非常好非常好非常好非常好非常好非常好非常好非常好非常好非常好非常好",
-    //       approvalStatus: "已通过",
-    //     },
-    //     {
-    //       id: "2",
-    //       name: "高校毕业设计管理系统",
-    //       teacher: { id: "3", name: "小红", tel: "13864795123" },
-    //       remark: "不好",
-    //       approvalStatus: "已退回",
-    //     },
-    //     {
-    //       id: "3",
-    //       name: "高校毕业设计管理系统",
-    //       content: "ghhhhhhhhhhhh",
-    //       require: "1111111111111111111okikuhjhhjiiiiii",
-    //       teacher: { id: "4", name: "王强" },
-    //       remark: "？",
-    //       approvalStatus: "未审核",
-    //     },
-    //     {
-    //       id: "4",
-    //       name: "高校毕业设计管理系统",
-    //       teacher: { id: "5", name: "李刚", email: "123456@163.com" },
-    //       remark:
-    //         "非常好非常好非常好非常好非常好非常好非常好非常好非常好非常好非常好",
-    //       approvalStatus: "已通过",
-    //     },
-    //     {
-    //       id: "5",
-    //       name: "高校毕业设计管理系统",
-    //       teacher: { id: "4", name: "王强" },
-    //       remark: "不好",
-    //       approvalStatus: "已退回",
-    //     },
-    //     {
-    //       topidicId: "6",
-    //       name: "高校毕业设计管理系统",
-    //       teacher: { id: "5", name: "李刚" },
-    //       remark: "？",
-    //       approvalStatus: "未审核",
-    //     },
-    //   ];
-    //   this.information = {
-    //     id: "20175308",
-    //     name: "张三",
-    //     faculty: "计算机科学与工程学院",
-    //     tel: "123456789",
-    //     lastLogin: "2017-02-02",
-    //   };
   },
   watch: {
     refreshOperation(val, oldVal) {
       if (val >= 0) {
-        // 返回所有this.arrangeData =
-        console.log(val, "返回所有this.arrangeData");
-      }
-      if (val == 1) {
-        // 更新 withoutArrangeStudents----------------------------------------------------------
-        console.log(val, "withoutArrangeStudents");
+        this.arrangeQuery();
       }
       if (val != -1) {
         this.refreshOperation = -1;
       }
-      console.log(val, "--arrangeInfo", this.arrangeInfo);
     },
   },
 };
@@ -2482,9 +2347,7 @@ export default {
 .leader-indicator-pane textarea {
 }
 /* 安排模块 */
-.edit-arrange-info {
-  width: 550px;
-}
+
 /* 评价指标模块 */
 .leader-indicator-pane {
 }

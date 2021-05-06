@@ -5,6 +5,14 @@
       <span class="title flex-row-around">高校毕业设计（论文）管理系统</span>
     </section>
     <!-- 教师模块 -->
+    <div v-if="$store.state.user.role == 'teacher' && showTime" class="flex-column-center">
+      <span style="margin-bottom: 2px">{{
+        moduleName + "开始时间：" + (startTime == null ? "暂无" : startTime)
+      }}</span>
+      <span style="margin-top: 2px">
+        {{ moduleName + "结束时间：" + (endTime == null ? "暂无" : endTime) }}
+      </span>
+    </div>
     <div
       v-if="$store.state.user.role == 'teacher'"
       class="flex-row-around"
@@ -25,6 +33,19 @@
           v-if="this.$route.path == '/teacher/addselecttopic'"
         ></i>
       </el-button>
+    </div>
+    <div
+      v-else-if="$store.state.user.role == 'student' && showCountDown"
+      class="count-down"
+    >
+      {{ str }}
+      <section v-if="inputTime == null">暂无</section>
+      <section v-else>
+        <span v-if="day > 0">{{ day + "天" }}</span>
+        <span v-if="day >= 0 && hour >= 0">{{ hour + "小时" }}</span>
+        <span v-if="minute >= 0">{{ minute + "分" }}</span>
+        <span v-if="second >= 0">{{ second + "秒" }}</span>
+      </section>
     </div>
     <section class="flex-row-around">
       <div
@@ -87,7 +108,7 @@
                   min: 8,
                   message: '密码长度不能小于8个字符',
                   trigger: 'blur',
-                }
+                },
               ]"
             >
               <el-input
@@ -127,6 +148,7 @@ import { request } from "../network/request";
 import Qs from "qs";
 
 export default {
+  inject: ["reload"],
   components: {
     "edit-teacher-info-dialog": EditTeacherInfoDialog,
   },
@@ -136,23 +158,54 @@ export default {
       ruleForm: {
         id: "",
         password: "",
+        role: "",
       },
       dialogShow: false,
       operate: "edit",
       refreshOperation: false,
       entrance: "header",
       showEditPassword: false,
+      showCountDown: false,
+      inputTime: null,
+      str: "",
+      day: 0,
+      hour: 0,
+      minute: 0,
+      second: 0,
+      timer: null,
+      showTime: true,
+      startTime: "",
+      endTime: "",
+      moduleName: "",
     };
   },
   props: {
-    isAddSelectTopic: Boolean,
+    nextModule: String,
   },
   methods: {
-    back() {
-      
+    back() {},
+    countDown() {
+      let nowTime = +new Date();
+      let time = +new Date(this.inputTime);
+      let seconds = (time - nowTime) / 1000;
+      let d = parseInt(seconds / 60 / 60 / 24);
+      this.day = d;
+      let h = parseInt((seconds / 60 / 60) % 24);
+      h = h < 10 ? "0" + h : h;
+      this.hour = h;
+      let m = parseInt((seconds / 60) % 60);
+      m = m < 10 ? "0" + m : m;
+      this.minute = m;
+      let s = parseInt(seconds % 60);
+      s = s < 10 ? "0" + s : s;
+      this.second = s;
+      if (new Date(this.inputTime) <= new Date()) {
+        this.inputTime = null;
+        clearInterval(this.timer);
+        this.reload();
+      }
     },
     passwordChange() {
-      console.log("change", this.ruleForm.password);
       this.showEditPassword = true;
     },
     submit() {
@@ -188,12 +241,43 @@ export default {
     },
     quit() {
       this.ruleForm.password = this.$store.state.user.password;
-      console.log("quit", this.ruleForm.password);
       this.showEditPassword = false;
       this.$refs["elpopoveredit"].doClose();
     },
     switchOperationPage() {
-      this.$emit("update:isAddSelectTopic", !this.isAddSelectTopic);
+      request(
+        "/QueryModuleTimeServlet",
+        Qs.stringify({
+          id: this.$store.state.user.id,
+          role: this.$store.state.user.role,
+          moduleName: "选题",
+        }),
+        {
+          "Content-Type": "application/x-www-form-urlencoded",
+        }
+      )
+        .then((res) => {
+          if (
+            res.data.endTime != null &&
+            new Date(res.data.endTime) < new Date().getTime()
+          ) {
+            if (this.$route.path == "/teacher/addselecttopic") {
+              this.$router.push("/teacher/instructstudents");
+            } else if (this.$route.path == "/teacher/instructstudents") {
+              this.$router.push("/teacher/addselecttopic");
+            }
+          } else {
+            this.$message({
+              showClose: true,
+              message: "选题阶段尚未结束！",
+              type: "warning",
+            });
+          }
+          console.log(res);
+        })
+        .catch((err) => {
+          consoel.log(err);
+        });
     },
   },
   watch: {
@@ -201,12 +285,93 @@ export default {
       handler(val, oldVal) {
         this.ruleForm.id = val.id;
         this.ruleForm.password = val.password;
+        this.ruleForm.role = val.role;
+        if (val.role == "teacher") {
+          request(
+            "/QueryCurrentModuleInfoServlet",
+            Qs.stringify({
+              id: val.id,
+              role: "teacher",
+            }),
+            {
+              "Content-Type": "application/x-www-form-urlencoded",
+            }
+          )
+            .then((res) => {
+              console.log(res);
+              this.moduleName = res.data.moduleName;
+              this.startTime = res.data.startTime;
+              this.endTime = res.data.endTime;
+              if( new Date(res.data.endTime) <= new Date() && res.data.moduleName == '选题' ) {
+                this.showTime = false;
+              }
+            })
+            .catch((err) => {
+              console.log(err);
+            });
+        }
       },
       deep: true,
     },
+    nextModule(val, oldVal) {
+      if (val != null) {
+        let moduleName = "";
+        if (val == "选题未开始") {
+          moduleName = "选题";
+        } else if (val == "选题已开始") {
+          moduleName = "选题";
+        } else {
+          moduleName = val;
+        }
+        request(
+          "/CountDownServlet",
+          Qs.stringify({
+            id: this.$store.state.user.id,
+            moduleName: moduleName,
+          }),
+          {
+            "Content-Type": "application/x-www-form-urlencoded",
+          }
+        )
+          .then((res) => {
+            console.log(res);
+            if (val == "选题未开始") {
+              this.str = "距离选题开始还剩：";
+              if (res.data.time[0] == null) {
+                this.inputTime = null;
+              } else {
+                this.inputTime = res.data.time[0];
+                this.countDown();
+                this.timer = setInterval(this.countDown, 1000);
+              }
+            } else if (val == "选题已开始") {
+              this.str = "距离选题结束还剩：";
+              if (res.data.time[1] == null) {
+                this.inputTime = null;
+              } else {
+                this.inputTime = res.data.time[1];
+                this.countDown();
+                this.timer = setInterval(this.countDown, 1000);
+              }
+            } else {
+              this.str = "距离" + moduleName + "开始还剩：";
+              if (res.data.time[0] == null) {
+                this.inputTime = null;
+              } else {
+                this.inputTime = res.data.time[0];
+                this.countDown();
+                this.timer = setInterval(this.countDown, 1000);
+              }
+            }
+            this.showCountDown = true;
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      }
+    },
     refreshOperation(val, oldVal) {
       if (val == true) {
-        console.log("-----------shuaxin-------");
         request(
           "/QueryTeacherServlet",
           Qs.stringify({
@@ -226,15 +391,11 @@ export default {
           .catch((err) => {
             consoel.log(err);
           });
-        console.log("更新结束");
-        console.log(this.$store.state.teacherMyInfo);
         this.refreshOperation = false;
       }
     },
   },
-  created() {
-    console.log("header------------------");
-  },
+  created() {},
 };
 </script>
 
@@ -263,6 +424,11 @@ export default {
   font-weight: 700;
   color: #1296db;
   text-shadow: 5px 5px 5px rgba(0, 0, 255, 0.5);
+}
+.count-down {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 .back {
   background-color: #1296db;

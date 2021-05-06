@@ -1,19 +1,21 @@
 
 <template>
   <div>
-    <el-input v-model="test"></el-input>
-    <div>{{test}}</div>
+    <el-input-number v-model="num" @change="handleChange" :min="1" :max="10" label="描述文字"></el-input-number>
   </div>
 </template>
 
 <script>
-import axios from "axios";
-import Qs from "qs";
-import { testRequest } from "../network/request";
+import ChildrenTest from './ChildrenTest'
 export default {
+  components: {
+    'children-test': ChildrenTest
+  },
   data() {
     return {
-      test: null,
+      test: {
+        value: -1
+      },
       name: "zs",
       num: undefined,
       people: [
@@ -30,8 +32,16 @@ export default {
       ],
     };
   },
+  methods: {
+    change() {
+      this.test.value = Math.random();
+    },
+    handleChange( currentValue, oldValue ) {
+      console.log(currentValue, oldValue);
+    }
+  },
   mounted() {
-    console.log(JSON.stringify(this.people));
+    // console.log(JSON.stringify(this.people));
     // testRequest(
     //   "/TestServlet",
     //   encodeURI(

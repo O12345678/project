@@ -266,7 +266,6 @@ export default {
       this.teacherInfoCurrentPage = currentPage;
     },
     teacherInfoEdit(index) {
-      console.log("------------------" + this.dialogShow);
       this.teacherInfo = {
         id: "",
         password: "",
@@ -401,7 +400,6 @@ export default {
           .catch((err) => {
             console.log(err);
           });
-        console.log("更新所有的教师信息");
         this.refreshOperation = false;
       }
     },

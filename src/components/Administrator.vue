@@ -71,7 +71,6 @@ export default {
             role: "administrator",
           },
         });
-        console.log("设置密码成功！")
       })
       .catch((err) => {
         console.log(err);

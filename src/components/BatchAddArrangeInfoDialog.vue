@@ -187,23 +187,20 @@ export default {
   },
   methods: {
     submitEditArrange() {
-      console.log("go");
       this.$refs["info"].validate((valid) => {
         if (valid) {
-          console.log("submit");
           this.isShow = false;
           this.$emit("update:editArrangeDialogVisible", this.isShow);
           if (this.arrangeCurrentIndex >= 0) {
             // 修改数据库 this.info-----------------------------------------------------------
             this.$emit("update:refreshOperation", 0);
           } else {
-            console.log(this.info);
+  
             // 添加数据库 this.info-----------------------------------------------------------
             this.$emit("update:refreshOperation", 1);
           }
-          console.log("info", this.info);
         } else {
-          console.log("error");
+
           return false;
         }
       });
@@ -211,24 +208,23 @@ export default {
     quitEditArrange() {
       this.isShow = false;
       this.$emit("update:editArrangeDialogVisible", this.isShow);
-      console.log("quit");
     },
   },
-  watch: {
-    editArrangeDialogVisible: {
-      handler(val, oldVal) {
-        this.isShow = val;
-      },
-      deep: true,
-    },
-    arrangeInfo: {
-      handler(val, oldVal) {
-        console.log("new--", val);
-        this.info = val;
-      },
-      deep: true,
-    },
-  },
+  // watch: {
+  //   editArrangeDialogVisible: {
+  //     handler(val, oldVal) {
+  //       this.isShow = val;
+  //     },
+  //     deep: true,
+  //   },
+  //   arrangeInfo: {
+  //     handler(val, oldVal) {
+  //       console.log("new--", val);
+  //       this.info = val;
+  //     },
+  //     deep: true,
+  //   },
+  // },
   mounted() {
     this.teachers = [
       {

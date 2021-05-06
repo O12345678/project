@@ -21,13 +21,13 @@
               },
             ]"
           >
-          <el-input
-            style="width: 150px"
-            v-model="info.id"
-            placeholder="请输入教师编号"
-            size="small"
-            :disabled="operate == 'edit'"
-          ></el-input>
+            <el-input
+              style="width: 150px"
+              v-model="info.id"
+              placeholder="请输入教师编号"
+              size="small"
+              :disabled="operate == 'edit'"
+            ></el-input>
           </el-form-item>
           教师姓名:
           <el-form-item
@@ -108,7 +108,7 @@
             size="small"
             style="width: 150px"
             clearable
-             @change="change"
+            @change="change"
           >
             <el-option
               v-for="(item, index) in academicDegrees"
@@ -179,7 +179,7 @@ export default {
       isShow: this.dialogShow,
       academicDegrees: ["学士", "硕士", "博士"],
       educationLevels: ["大学本科", "硕士研究生", "博士研究生"],
-      jobTitles: ['讲师', '副教授', '教授'],
+      jobTitles: ["讲师", "副教授", "教授"],
     };
   },
   props: {
@@ -195,8 +195,8 @@ export default {
       this.info.academicDegree = this.academicDegrees[index];
       this.info.educationLevel = this.educationLevels[index];
     },
-    change( val ) {
-      if( val == "" ) {
+    change(val) {
+      if (val == "") {
         this.info.academicDegree = "";
         this.info.educationLevel = "";
       }
@@ -204,18 +204,14 @@ export default {
     submitEditInfo(validateName) {
       this.$refs[validateName].validate((valid) => {
         if (valid) {
-          console.log("ok");
           this.$emit("update:dialogShow", false);
           request(
             "/UpdateTeacherServlet",
-            encodeURI(
-              Qs.stringify({
-                id: this.$store.state.user.id,
-                role: "administrator",
-                info: JSON.stringify(this.info),
-              }),
-              "utf-8"
-            ),
+            Qs.stringify({
+              id: this.$store.state.user.id,
+              role: "administrator",
+              info: encodeURI(JSON.stringify(this.info), "utf-8"),
+            }),
             {
               "Content-Type": "application/x-www-form-urlencoded",
             }
@@ -241,7 +237,7 @@ export default {
       this.$emit("update:dialogShow", false);
       if (this.entrance == "header") {
         deepCopy(this.info, this.$store.state.teacherMyInfo);
-       } //else if (this.entrance == "manage") {
+      } //else if (this.entrance == "manage") {
       //   deepCopy(this.info, this.teacherInfo);
       // }
     },
@@ -261,8 +257,6 @@ export default {
     },
     "$store.state.teacherMyInfo": {
       handler(val, oldVal) {
-        console.log("-------------change teacherMyInfo");
-        console.log(val);
         deepCopy(this.info, val);
       },
       deep: true,
@@ -270,7 +264,6 @@ export default {
   },
   mounted() {
     if (this.entrance == "header") {
-      console.log("editmounted");
       deepCopy(this.info, this.$store.state.teacherMyInfo);
     } else if (this.entrance == "manage") {
       deepCopy(this.info, this.teacherInfo);

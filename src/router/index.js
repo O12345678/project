@@ -15,7 +15,11 @@ import SelectTopicInfo from "../components/SelectTopicInfo.vue"
 import AddSelectTopic from "../components/AddSelectTopic.vue";
 import InstructStudents from "../components/InstructStudents.vue";
 import EmptySelectTopic from '../components/EmptySelectTopic.vue'
-
+import ChildrenTest from "../components/ChildrenTest.vue"
+import InstructStudentsInfo from "../components/InstructStudentsInfo.vue"
+import InstructStudentsInfoReportRecord from "../components/InstructStudentsInfoReportRecord.vue"
+import TeacherTaskBookIssue from "../components/TeacherTaskBookIssue.vue"
+import InstructTeacherReview from "../components/InstructTeacherReview.vue"
 Vue.use(Router)
 
 const VueRouterPush = Router.prototype.push
@@ -31,6 +35,10 @@ const routes = [
   {
     path: '/test',
     component: Test
+  },
+  {
+    path: '/childrentest',
+    component: ChildrenTest
   },
   {
     path: '/login',
@@ -50,7 +58,7 @@ const routes = [
     children: [{
       path: '/',
       redirect: '/administrator/studentinfomanage'
-    },{
+    }, {
       path: 'replyarrangegather',
       component: ReplyArrangeGather
     }, {
@@ -71,10 +79,10 @@ const routes = [
     path: '/teacher',
     component: Teacher,
     children: [
-      {
-        path: '/',
-        redirect: '/teacher/addselecttopic'
-      },
+      // {
+      //   path: '/',
+      //   redirect: '/teacher/addselecttopic'
+      // },
       {
         path: 'addselecttopic',
         component: AddSelectTopic,
@@ -82,6 +90,26 @@ const routes = [
       {
         path: 'instructstudents',
         component: InstructStudents,
+        // children: [
+        //   {
+        //     path: ':studentName',
+        //     component: InstructStudentsInfo,
+        //     children: [
+        //       {
+        //         path: '任务书',
+        //         component: TeacherTaskBookIssue
+        //       },
+        //       {
+        //         path: ':moduleName',
+        //         component: InstructStudentsInfoReportRecord
+        //       },
+        //       {
+        //         path: '评审',
+        //         component: InstructTeacherReview
+        //       }
+        //     ]
+        //   }
+        // ]
         // children: [{
         //   path: 'topic' + ':topicIndex',
         //   component: SelectTopicInfo

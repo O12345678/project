@@ -12,16 +12,16 @@
           filterable
         >
           <el-option
-            v-for="(item, index) in students"
+            v-for="(item, index) in studentNames"
             :key="index"
-            :value="item.name"
+            :value="item"
           >
           </el-option>
         </el-select>
         专业:
         <el-select
           clearable
-          v-model="searchInfo.class.profession"
+          v-model="searchInfo.profession"
           placeholder="请选择专业"
           size="small"
           style="width: 200px"
@@ -31,14 +31,14 @@
           <el-option
             v-for="(item, index) in professions"
             :key="index"
-            :value="item.profession"
+            :value="item"
           >
           </el-option>
         </el-select>
         班级:
         <el-select
           clearable
-          v-model="searchInfo.class.classNumber"
+          v-model="searchInfo.classNumber"
           placeholder="请选择班级"
           size="small"
           style="width: 150px"
@@ -47,6 +47,7 @@
             v-for="(item, index) in classNumbers"
             :key="index"
             :value="item"
+            :label="item + '班'"
           >
           </el-option>
         </el-select>
@@ -68,19 +69,19 @@
           style="width: 250px"
         >
         </el-input>
-        选题模式:
+        选题难度:
         <el-select
           clearable
-          v-model="searchInfo.pattern"
-          placeholder="请选择模式"
+          v-model="searchInfo.degreeOfDifficulty"
+          placeholder="请选择难度"
           size="small"
           style="width: 150px"
           filterable
         >
           <el-option
-            v-for="(item, index) in patterns"
+            v-for="(item, index) in degreeOfDifficulties"
             :key="index"
-            :value="item.name"
+            :value="item"
           >
           </el-option>
         </el-select>
@@ -94,9 +95,9 @@
           filterable
         >
           <el-option
-            v-for="(item, index) in teachers"
+            v-for="(item, index) in teacherNames"
             :key="index"
-            :value="item.name"
+            :value="item"
           >
           </el-option>
         </el-select>
@@ -134,6 +135,7 @@
       >
         <template slot-scope="scope">
           <a
+            style="white-space: nowrap"
             @click="
               showDetailInfoDialog(
                 topicDetailInfo,
@@ -153,9 +155,9 @@
       </el-table-column>
       <el-table-column
         align="center"
-        prop="pattern"
+        prop="degreeOfDifficulty"
         :resizable="false"
-        label="选题模式"
+        label="选题难度"
         width="120px"
       ></el-table-column>
       <el-table-column
@@ -186,7 +188,7 @@
         align="center"
         :resizable="false"
         label="指导教师"
-        width="150"
+        width="120"
       >
         <template slot-scope="scope">
           <a
@@ -242,6 +244,8 @@ import { alterPage } from "../assets/js/utils.js";
 import { deepCopy } from "../assets/js/utils.js";
 import { querySearchAsync } from "../assets/js/utils.js";
 import { createStateFilter } from "../assets/js/utils.js";
+import { request } from "../network/request";
+import Qs from "qs";
 export default {
   components: {
     "topic-detail-dialog": TopicDetailInfoDialog,
@@ -291,34 +295,6 @@ export default {
       selectTopicInfos: [
         {
           id: "",
-          name: "高校毕业设计管理系统",
-          declaredYear: "",
-          type: "",
-          pattern: "",
-          degreeOfDifficulty: "",
-          content: "",
-          require: "",
-          progress: "",
-          finalNumber: 1,
-          student: {
-            id: "",
-            name: "张三",
-            profession: "计算机科学与技术",
-            classNumber: "一班",
-          },
-          teacher: {
-            id: "",
-            name: "王刚",
-            faculty: "",
-            jobTitle: "讲师",
-            educationLevel: "",
-            academicDegree: "",
-            tel: "",
-            email: "",
-          },
-        },
-        {
-          id: "",
           name: "",
           declaredYear: "",
           type: "",
@@ -331,204 +307,8 @@ export default {
           student: {
             id: "",
             name: "",
-            profession: "信息安全",
-            classNumber: "一班",
-          },
-          teacher: {
-            id: "",
-            name: "李刚",
-            faculty: "",
-            jobTitle: "",
-            educationLevel: "本科",
-            academicDegree: "学士学位",
-            tel: "13965478912",
-            email: "",
-          },
-        },
-        {
-          id: "",
-          name: "",
-          declaredYear: "",
-          type: "",
-          pattern: "",
-          degreeOfDifficulty: "",
-          content: "",
-          require: "",
-          progress: "",
-          finalNumber: 1,
-          student: {
-            id: "",
-            name: "",
-            profession: "计算机科学与技术",
-            classNumber: "二班",
-          },
-          teacher: {
-            id: "",
-            name: "王飞",
-            faculty: "",
-            jobTitle: "",
-            educationLevel: "博士",
-            academicDegree: "博士学位",
-            tel: "15645789123",
-            email: "",
-          },
-        },
-        {
-          id: "",
-          name: "",
-          declaredYear: "",
-          type: "",
-          pattern: "",
-          degreeOfDifficulty: "",
-          content: "",
-          require: "",
-          progress: "",
-          finalNumber: 1,
-          student: {
-            id: "",
-            name: "",
-            profession: "计算机科学与技术",
-            classNumber: "一班",
-          },
-          teacher: {
-            id: "",
-            name: "",
-            faculty: "",
-            jobTitle: "",
-            educationLevel: "",
-            academicDegree: "",
-            tel: "",
-            email: "",
-          },
-        },
-        {
-          id: "",
-          name: "",
-          declaredYear: "",
-          type: "",
-          pattern: "",
-          degreeOfDifficulty: "",
-          content: "",
-          require: "",
-          progress: "",
-          finalNumber: 1,
-          student: {
-            id: "",
-            name: "",
-            profession: "计算机科学与技术",
-            classNumber: "一班",
-          },
-          teacher: {
-            id: "",
-            name: "",
-            faculty: "",
-            jobTitle: "",
-            educationLevel: "",
-            academicDegree: "",
-            tel: "",
-            email: "",
-          },
-        },
-        {
-          id: "",
-          name: "",
-          declaredYear: "",
-          type: "",
-          pattern: "",
-          degreeOfDifficulty: "",
-          content: "",
-          require: "",
-          progress: "",
-          finalNumber: 1,
-          student: {
-            id: "",
-            name: "",
-            profession: "计算机科学与技术",
-            classNumber: "一班",
-          },
-          teacher: {
-            id: "",
-            name: "",
-            faculty: "",
-            jobTitle: "",
-            educationLevel: "",
-            academicDegree: "",
-            tel: "",
-            email: "",
-          },
-        },
-        {
-          id: "",
-          name: "",
-          declaredYear: "",
-          type: "",
-          pattern: "",
-          degreeOfDifficulty: "",
-          content: "",
-          require: "",
-          progress: "",
-          finalNumber: 1,
-          student: {
-            id: "",
-            name: "",
-            profession: "计算机科学与技术",
-            classNumber: "一班",
-          },
-          teacher: {
-            id: "",
-            name: "",
-            faculty: "",
-            jobTitle: "",
-            educationLevel: "",
-            academicDegree: "",
-            tel: "",
-            email: "",
-          },
-        },
-        {
-          id: "",
-          name: "",
-          declaredYear: "",
-          type: "",
-          pattern: "",
-          degreeOfDifficulty: "",
-          content: "",
-          require: "",
-          progress: "",
-          finalNumber: 1,
-          student: {
-            id: "",
-            name: "",
-            profession: "计算机科学与技术",
-            classNumber: "一班",
-          },
-          teacher: {
-            id: "",
-            name: "",
-            faculty: "",
-            jobTitle: "",
-            educationLevel: "",
-            academicDegree: "",
-            tel: "",
-            email: "",
-          },
-        },
-        {
-          id: "",
-          name: "",
-          declaredYear: "",
-          type: "",
-          pattern: "",
-          degreeOfDifficulty: "",
-          content: "",
-          require: "",
-          progress: "",
-          finalNumber: 1,
-          student: {
-            id: "",
-            name: "",
-            profession: "计算机科学与技术",
-            classNumber: "一班",
+            profession: "",
+            classNumber: "",
           },
           teacher: {
             id: "",
@@ -542,6 +322,10 @@ export default {
           },
         },
       ],
+      currentAcademicYear:
+        new Date().getMonth() + 1 >= 9
+          ? new Date().getFullYear()
+          : new Date().getFullYear() - 1,
       students: [
         {
           id: "",
@@ -561,17 +345,17 @@ export default {
           email: "",
         },
       ],
+      studentNames: [],
+      teacherNames: [],
       professions: [],
       classNumbers: [],
-      patterns: [],
+      degreeOfDifficulties: ["容易", "适中", "难"],
       searchInfo: {
-        name: "",
-        class: {
-          profession: "",
-          classNumber: "",
-        },
+        student: "",
+        profession: "",
+        classNumber: "",
         topic: "",
-        pattern: "",
+        degreeOfDifficulty: "",
         teacher: "",
       },
     };
@@ -589,13 +373,74 @@ export default {
       this.selectTopicInfoCurrentPage = currentPage;
     },
     professionChange(value) {
-      // 联动
-      console.log(value);
-      // 数据库查询班号-----------------------------------------------------------
+      this.searchInfo.classNumber = "";
+      this.classNumbers = [];
+
+      request(
+        "/QueryClassNumberServlet",
+        Qs.stringify({
+          profession: value,
+          grade: this.currentAcademicYear - 3,
+        }),
+        {
+          "Content-Type": "application/x-www-form-urlencoded",
+        }
+      )
+        .then((res) => {
+          this.classNumbers = res.data.classNumbers;
+          console.log(res);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
     query() {
-      // 数据库查询班号-----------------------------------------------------------
+      request(
+        "/QuerySelectTopicSummaryServlet",
+        Qs.stringify({
+          id: this.$store.state.user.id,
+          grade: this.currentAcademicYear - 3,
+          studentName: this.searchInfo.student,
+          profession: this.searchInfo.profession,
+          classNumber: this.searchInfo.classNumber,
+          topic: this.searchInfo.topic,
+          degreeOfDifficulty: this.searchInfo.degreeOfDifficulty,
+          teacherName: this.searchInfo.teacher,
+        }),
+        {
+          "Content-Type": "application/x-www-form-urlencoded",
+        }
+      )
+        .then((res) => {
+          console.log(res);
+          this.selectTopicInfos = res.data.selectTopicInfos;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
+  },
+  created() {
+    request(
+      "/SelectTopicSummaryInitServlet",
+      Qs.stringify({
+        id: sessionStorage.getItem("id"),
+        grade: this.currentAcademicYear - 3,
+      }),
+      {
+        "Content-Type": "application/x-www-form-urlencoded",
+      }
+    )
+      .then((res) => {
+        console.log(res);
+        this.professions = res.data.professions;
+        this.studentNames = res.data.studentNames;
+        this.teacherNames = res.data.teacherNames;
+        this.selectTopicInfos = res.data.selectTopicInfos;
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   },
 };
 </script>

@@ -639,6 +639,10 @@ a:hover {
     width: 180px;
 }
 
+.width320 {
+    width: 320px;
+}
+
 .text-align-center {
     text-align: center;
 }

@@ -286,7 +286,6 @@ export default {
       this.dialogShow = true;
     },
     studentInfoDelete(id) {
-      console.log(id + "-----=========-======-=")
       request(
         "/DeleteStudentServlet",
         Qs.stringify({
@@ -342,7 +341,6 @@ export default {
         });
     },
     addStudent() {
-      console.log("------------------" + this.dialogShow);
       this.studentInfo = {
         id: "",
         password: "",
@@ -386,7 +384,6 @@ export default {
     },
   },
   created() {
-    console.log("manage");
     request(
       "/StudentInfoManageInitServlet",
       Qs.stringify({
@@ -433,7 +430,7 @@ export default {
             console.log(res);
           })
           .catch((err) => {
-            console.log(err);
+            UpdateStudentServlet(err);
           });
         this.refreshOperation = false;
       }

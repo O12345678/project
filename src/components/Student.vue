@@ -1,6 +1,6 @@
 <template>
   <div class="root">
-    <common-header></common-header>
+    <common-header :nextModule.sync="nextModule"></common-header>
     <div id="download"></div>
     <div class="common-body-column">
       <div class="student-top">
@@ -323,7 +323,7 @@
                       type="text"
                       size="small"
                       style="color: #f56c6c"
-                      :disabled="!canOperate"
+                      :disabled="!canOperate || scope.row.state != '待处理'"
                     >
                       删除
                     </el-button>
@@ -360,32 +360,43 @@
                   <td>
                     指导教师:
                     <a
+                      v-if="gradeTable.teacher.id != null"
                       @click="
                         showDetailInfoDialog(
                           teacherDetailInfo,
-                          gradeTable.mentor,
+                          gradeTable.teacher,
                           teacherDetailInfoDialogVisible
                         )
                       "
-                      >{{ gradeTable.mentor.name }}</a
+                      >{{ gradeTable.teacher.name }}</a
                     >
+                    <span v-else>暂无</span>
                   </td>
                   <td>
                     <el-input
                       class="textarea-border-none student-score-table-remark"
                       type="textarea"
-                      v-model="gradeTable.mentor.remark"
+                      v-model="gradeTable.remark"
                       resize="none"
                       :readonly="true"
                     ></el-input>
                   </td>
-                  <td>{{ gradeTable.mentor.gradePercentage + "%" }}</td>
-                  <td>{{ gradeTable.mentor.score }}</td>
+                  <td>
+                    {{
+                      gradeTable.mentor == null
+                        ? "暂无"
+                        : gradeTable.mentor + "%"
+                    }}
+                  </td>
+                  <td>
+                    {{ gradeTable.grade == null ? "暂无" : gradeTable.grade }}
+                  </td>
                 </tr>
                 <tr>
                   <td>
                     答辩教师:
                     <a
+                      v-if="gradeTable.replyTeacher.id != null"
                       @click="
                         showDetailInfoDialog(
                           teacherDetailInfo,
@@ -395,23 +406,31 @@
                       "
                       >{{ gradeTable.replyTeacher.name }}</a
                     >
+                    <span v-else>暂无</span>
                   </td>
                   <td>
                     <el-input
                       class="textarea-border-none student-score-table-remark"
                       type="textarea"
-                      v-model="gradeTable.replyTeacher.remark"
+                      v-model="gradeTable.remark1"
                       resize="none"
                       :readonly="true"
                     ></el-input>
                   </td>
-                  <td>{{ gradeTable.replyTeacher.gradePercentage + "%" }}</td>
-                  <td>{{ gradeTable.replyTeacher.score }}</td>
+                  <td>
+                    {{
+                      gradeTable.reply == null ? "暂无" : gradeTable.reply + "%"
+                    }}
+                  </td>
+                  <td>
+                    {{ gradeTable.grade1 == null ? "暂无" : gradeTable.grade1 }}
+                  </td>
                 </tr>
                 <tr>
                   <td>
                     评审教师:
                     <a
+                      v-if="gradeTable.reviewTeacher.id != null"
                       @click="
                         showDetailInfoDialog(
                           teacherDetailInfo,
@@ -421,18 +440,27 @@
                       "
                       >{{ gradeTable.reviewTeacher.name }}</a
                     >
+                    <span v-else>暂无</span>
                   </td>
                   <td>
                     <el-input
                       class="textarea-border-none student-score-table-remark"
                       type="textarea"
-                      v-model="gradeTable.reviewTeacher.remark"
+                      v-model="gradeTable.remark2"
                       resize="none"
                       :readonly="true"
                     ></el-input>
                   </td>
-                  <td>{{ gradeTable.reviewTeacher.gradePercentage + "%" }}</td>
-                  <td>{{ gradeTable.reviewTeacher.score }}</td>
+                  <td>
+                    {{
+                      gradeTable.review == null
+                        ? "暂无"
+                        : gradeTable.review + "%"
+                    }}
+                  </td>
+                  <td>
+                    {{ gradeTable.grade2 == null ? "暂无" : gradeTable.grade2 }}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -441,19 +469,23 @@
                 <td>总成绩</td>
                 <td>
                   {{
-                    (gradeTable.reviewTeacher.gradePercentage *
-                      gradeTable.reviewTeacher.score +
-                      gradeTable.replyTeacher.score *
-                        gradeTable.replyTeacher.gradePercentage +
-                      gradeTable.mentor.gradePercentage *
-                        gradeTable.mentor.score) /
-                    100
+                    computGrade(gradeTable) == null
+                      ? "暂无"
+                      : computGrade(gradeTable)
                   }}
                 </td>
                 <td>等级评定</td>
-                <td>{{ gradeTable.isExcellent }}</td>
+                <td>{{ gradeJudge( gradeTable )}}</td>
                 <td>是否优秀毕业设计</td>
-                <td>{{ gradeTable.isExcellent }}</td>
+                <td>
+                  {{
+                    computGrade(gradeTable) == null
+                      ? "暂无"
+                      : computGrade(gradeTable) > 90
+                      ? "是"
+                      : "否"
+                  }}
+                </td>
               </tr>
             </table>
           </el-tab-pane>
@@ -535,6 +567,7 @@ export default {
       teacherDetailInfoDialogVisible: {
         value: false,
       },
+      nextModule: null,
       processStatus: "finish",
       steps: [
         "选题",
@@ -632,47 +665,59 @@ export default {
       canChoice: true,
       canOperate: true,
       gradeTable: {
-        mentor: {
-          id: "",
-          name: "王强",
-          faculty: "计算机科学与工程",
-          jobTitle: "副教授",
+        id: "",
+        name: "",
+        declaredYear: "",
+        type: "",
+        pattern: "",
+        degreeOfDifficulty: "",
+        content: "",
+        require: "",
+        finalNumber: 1,
+        student: {
+          id: null,
+          name: null,
+        },
+        status: "",
+        teacher: {
+          id: null,
+          name: "",
+          faculty: "",
+          jobTitle: "",
           educationLevel: "",
           academicDegree: "",
           tel: "",
           email: "",
-          remark:
-            "城市交通污染物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计物扩散速度自动检测软件设计研究城市交通污染物扩散速度自动检测软件设计检测软件设计研究城市交通污染物扩散速度自动检测软件设计研究",
-          gradePercentage: 20,
-          score: 80,
         },
+        grade: null,
+        remark: null,
+        mentor: null,
         replyTeacher: {
-          id: "",
-          name: "李刚",
-          faculty: "",
-          jobTitle: "",
-          educationLevel: "本科",
-          academicDegree: "学士学位",
-          tel: "",
-          email: "",
-          remark: "",
-          gradePercentage: 30,
-          score: 85,
-        },
-        reviewTeacher: {
-          id: "",
-          name: "李中冰",
+          id: null,
+          name: "",
           faculty: "",
           jobTitle: "",
           educationLevel: "",
           academicDegree: "",
-          tel: "13678945612",
+          tel: "",
           email: "",
-          remark: "",
-          gradePercentage: 50,
-          score: 80,
         },
-        isExcellent: "否",
+        grade1: null,
+        remark1: null,
+        reply: null,
+        reviewTeacher: {
+          id: null,
+          name: "",
+          faculty: "",
+          jobTitle: "",
+          educationLevel: "",
+          academicDegree: "",
+          tel: "",
+          email: "",
+        },
+        grade2: null,
+        remark2: null,
+        review: null,
       },
     };
   },
@@ -726,7 +771,11 @@ export default {
               const tabTaskbook = document.getElementById("download");
               const a = document.createElement("a");
               // a.style.display = "none";
-              a.href = "testapis/TestServlet?path=" + encodeURI(res.data.path);
+              a.href =
+                "/apis/FileDownloadServlet?path=" +
+                encodeURI(res.data.path, "utf-8") +
+                "&fileName=" +
+                encodeURI(this.$store.state.userName + ".任务书.doc", "utf-8");
               tabTaskbook.appendChild(a);
               a.onclick = function (e) {
                 e.stopPropagation();
@@ -741,7 +790,7 @@ export default {
         return false;
       } else if (activeName == "成绩查询") {
         return request(
-          "/QueryGradequiryStateServlet",
+          "/QueryGradequeryStateServlet",
           Qs.stringify({
             studentId: this.$store.state.user.id,
           }),
@@ -759,7 +808,7 @@ export default {
           } else if (res.data.studentStatus == "未完成") {
             this.$message({
               showClose: true,
-              message: "请先完成" + res.data.studentSchedule + "模块！",
+              message: "请先完成" + res.data.studentProgress + "模块！",
               type: "warning",
             });
             return Promise.reject("");
@@ -774,7 +823,7 @@ export default {
             });
             return Promise.reject("");
           } else {
-            // 获取信息
+            this.gradeTable = res.data.gradeTable;
           }
         });
       } else if (activeName == "选题") {
@@ -798,12 +847,12 @@ export default {
             return Promise.reject("");
           } else if (
             this.steps.indexOf(activeName) >
-              this.steps.indexOf(res.data.studentSchedule) &&
+              this.steps.indexOf(res.data.studentProgress) &&
             res.data.studentStatus == "未完成"
           ) {
             this.$message({
               showClose: true,
-              message: "请先完成" + res.data.studentSchedule + "模块！",
+              message: "请先完成" + res.data.studentProgress + "模块！",
               type: "warning",
             });
             return Promise.reject("");
@@ -819,12 +868,10 @@ export default {
             return Promise.reject("");
           } else {
             // 获取信息
-            console.log("获取信息！");
-              this.$store.commit({
-                type: "updateActiveModule",
-                activeModule: activeName,
-              });
-            
+            this.$store.commit({
+              type: "updateActiveModule",
+              activeModule: activeName,
+            });
           }
         });
       }
@@ -864,7 +911,6 @@ export default {
         });
     },
     select(index, row) {
-      console.log(row);
       request(
         "/UpdateChooseTopicServlet",
         Qs.stringify({
@@ -961,12 +1007,16 @@ export default {
             this.canChoice = true;
             this.canOperate = true;
           }
-          if (
-            res.data.topicState == "已确定" ||
-            res.data.topicState == "未通过"
-          ) {
+          if (res.data.topicState == "已确定") {
             this.canChoice = false;
             this.canOperate = false;
+            this.$message({
+              showClose: true,
+              message: "选题" + res.data.topicState + "无法进行删除操作！",
+              type: "warning",
+            });
+          }
+          if (res.data.topicState == "未通过") {
             this.$message({
               showClose: true,
               message: "选题" + res.data.topicState + "无法进行删除操作！",
@@ -978,6 +1028,43 @@ export default {
           console.log(err);
         });
     },
+    computGrade(reviewInfo) {
+      if (
+        reviewInfo.reply != null &&
+        reviewInfo.review != null &&
+        reviewInfo.mentor != null &&
+        reviewInfo.grade != null &&
+        reviewInfo.grade1 != null &&
+        reviewInfo.grade2 != null
+      ) {
+        return (
+          (reviewInfo.reply * reviewInfo.grade1 +
+            reviewInfo.review * reviewInfo.grade1 +
+            reviewInfo.mentor * reviewInfo.grade) /
+          100
+        );
+      } else {
+        return null;
+      }
+    },
+    gradeJudge( grade ) {
+      let temp = this.computGrade(grade);
+      if( temp == null ) {
+        return '暂无'
+      }
+      else if( temp < 100 && temp >= 90 ) {
+        return 'A'
+      }
+      else if( temp < 90 && temp >= 80 ) {
+        return 'B'
+      }
+      else if( temp < 80 && temp >= 60 ) {
+        return 'C'
+      }
+      else if ( temp < 60 ) {
+        return 'D'
+      }
+    }
   },
   created() {
     request(
@@ -991,11 +1078,55 @@ export default {
     )
       .then((res) => {
         console.log(res);
+        // 先更新vuex----------------
+        this.$store.commit({
+          type: "updateUserName",
+          newName: res.data.information.name,
+        });
+        this.$store.commit({
+          type: "updateUser",
+          newUser: {
+            id: res.data.information.id,
+            password: res.data.information.password,
+            role: "student",
+          },
+        });
+        if (res.data.myTopic.id != null) {
+          this.$store.commit({
+            type: "updateMyTopic",
+            newTopic: res.data.myTopic,
+          });
+          this.$store.commit({
+            type: "updateMyTeacher",
+            newTeacher: res.data.myTopic.teacher,
+          });
+        }
         this.topicData = res.data.topicData;
         this.myChoiceTopicData = res.data.myChoiceTopicData;
-        this.stepActive = this.steps.indexOf(res.data.studentSchedule); 
-        this.processStatus = res.data.studentStatus == '不合格' ? "error" : "finish"
-        this.activeName = res.data.studentSchedule == null ? '选题' : res.data.studentSchedule;
+        this.stepActive = this.steps.indexOf(res.data.studentProgress);
+        this.processStatus =
+          res.data.studentStatus == "不合格"
+            ? "error"
+            : res.data.studentStatus == "已完成"
+            ? "success"
+            : "finish";
+        this.activeName =
+          res.data.studentProgress == null ? "选题" : res.data.studentProgress;
+        if (res.data.studentProgress == null) {
+          this.nextModule = "选题未开始";
+        } else if (
+          res.data.studentProgress == "选题" &&
+          res.data.studentStatus == "未完成"
+        ) {
+          this.nextModule = "选题已开始";
+        } else if (
+          res.data.studentStatus == "已完成" &&
+          res.data.studentProgress != "毕业论文"
+        ) {
+          this.nextModule = this.steps[
+            this.steps.indexOf(res.data.studentProgress) + 1
+          ];
+        }
         if (res.data.studentState == "已确定") {
           this.canChoice = false;
           this.canOperate = false;
@@ -1018,18 +1149,6 @@ export default {
           this.canOperate = false;
         }
         this.teachers = res.data.teachers;
-        this.$store.commit({
-          type: "updateUserName",
-          newName: res.data.information.name,
-        });
-        this.$store.commit({
-          type: "updateUser",
-          newUser: {
-            id: res.data.information.id,
-            password: res.data.information.password,
-            role: "student",
-          },
-        });
       })
       .catch((err) => {
         console.log(err);

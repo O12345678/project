@@ -246,9 +246,6 @@ export default {
       this.canEdit = true;
     },
     deleteSelectTopic(index) {
-      console.log(index);
-      console.log(this.topicData[index]);
-      console.log(this.topicData[index].id);
       request(
         "/DeleteSelectTopicServlet",
         Qs.stringify({
@@ -314,7 +311,7 @@ export default {
         this.topicData = res.data.topicData;
       })
       .catch((err) => {
-        console.log(err);
+        console.log(err); 
       });
   },
 };
