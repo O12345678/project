@@ -13,9 +13,9 @@
               '/apis/FileDownloadServlet?path=' +
               encodeURI(report.path, 'utf-8') +
               '&fileName=' +
-              encodeURI(moduleName + '.doc', 'utf-8')
+              encodeURI(moduleName + (moduleName == '毕业设计' ? '.zip' : '.doc'), 'utf-8')
             "
-            >{{ moduleName + ".doc" }}</a
+            >{{ moduleName + (moduleName == '毕业设计' ? '.zip' : '.doc') }}</a
           >
         </td>
       </tr>

@@ -38,10 +38,15 @@
                 </tr>
                 <tr>
                   <td class="width160">
-                    {{ $store.state.activeModule + "模板:" }}
+                    {{
+                      $store.state.activeModule +
+                      ($store.state.activeModule == "毕业设计"
+                        ? "说明:"
+                        : "模板:")
+                    }}
                   </td>
                   <td class="width320">
-                    <span v-if="moduleInfo.template == null">暂无模板</span>
+                    <span v-if="moduleInfo.template == null">暂无</span>
                     <a
                       v-else
                       :href="
@@ -71,9 +76,14 @@
                         '/apis/FileDownloadServlet?path=' +
                         encodeURI(moduleInfo.myReport.path, 'utf-8') +
                         '&fileName=' +
-                        encodeURI($store.state.activeModule + '.doc', 'utf-8')
+                        encodeURI($store.state.activeModule + ($store.state.activeModule == '毕业设计' ? '.zip' : '.doc'), 'utf-8')
                       "
-                      >{{ $store.state.activeModule + ".doc"}}</a
+                      >{{
+                        $store.state.activeModule +
+                        ($store.state.activeModule == "毕业设计"
+                          ? ".zip"
+                          : ".doc")
+                      }}</a
                     >
                     <span v-else>未定稿</span>
                   </td>
@@ -119,7 +129,7 @@
             >back
           </el-button>
         </div>
-        <el-table :data="submitRecord" style="width: 100%" :height="406" >
+        <el-table :data="submitRecord" style="width: 100%" :height="406">
           <el-table-column
             label="序号"
             type="index"
@@ -235,17 +245,30 @@ export default {
       let extension = file.name.substring(file.name.lastIndexOf(".") + 1);
       this.extraData.studentId = this.$store.state.user.id;
       this.extraData.activeModule = this.$store.state.activeModule;
-      if (extension != "doc" && extension != "docx") {
+      if (
+        this.$store.state.activeModule != "毕业设计" &&
+        extension != "doc" &&
+        extension != "docx"
+      ) {
         this.$message({
           showClose: true,
           message: "仅支持.doc或.docx文件！",
           type: "warning",
         });
         return false;
+      } else if (
+        this.$store.state.activeModule == "毕业设计" &&
+        extension != "zip"
+      ) {
+        this.$message({
+          showClose: true,
+          message: "仅支持.zip文件！",
+          type: "warning",
+        });
+        return false;
       }
     },
-    handleUploadProgress(event, file, fileList) {
-    },
+    handleUploadProgress(event, file, fileList) {},
     handleUploadError(err, file, fileList) {
       this.$message({
         showClose: true,
@@ -314,7 +337,6 @@ export default {
 </script>
 
 <style>
-
 </style>
 
 

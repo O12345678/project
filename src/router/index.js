@@ -20,6 +20,7 @@ import InstructStudentsInfo from "../components/InstructStudentsInfo.vue"
 import InstructStudentsInfoReportRecord from "../components/InstructStudentsInfoReportRecord.vue"
 import TeacherTaskBookIssue from "../components/TeacherTaskBookIssue.vue"
 import InstructTeacherReview from "../components/InstructTeacherReview.vue"
+import UploadDocument from "../components/UploadDocument.vue"
 Vue.use(Router)
 
 const VueRouterPush = Router.prototype.push
@@ -30,7 +31,7 @@ Router.prototype.push = function push(to) {
 const routes = [
   {
     path: '/',
-    redirect: '/teacher'
+    redirect: '/login'
   },
   {
     path: '/test',
@@ -73,16 +74,19 @@ const routes = [
     }, {
       path: 'studentinfomanage',
       component: StudentInfoManage
+    }, {
+      path: 'uploaddocument',
+      component: UploadDocument
     }]
   },
   {
     path: '/teacher',
     component: Teacher,
     children: [
-      // {
-      //   path: '/',
-      //   redirect: '/teacher/addselecttopic'
-      // },
+      {
+        path: '/',
+        redirect: '/teacher/addselecttopic'
+      },
       {
         path: 'addselecttopic',
         component: AddSelectTopic,

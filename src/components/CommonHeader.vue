@@ -5,7 +5,10 @@
       <span class="title flex-row-around">高校毕业设计（论文）管理系统</span>
     </section>
     <!-- 教师模块 -->
-    <div v-if="$store.state.user.role == 'teacher' && showTime" class="flex-column-center">
+    <div
+      v-if="$store.state.user.role == 'teacher' && showTime"
+      class="flex-column-center"
+    >
       <span style="margin-bottom: 2px">{{
         moduleName + "开始时间：" + (startTime == null ? "暂无" : startTime)
       }}</span>
@@ -55,12 +58,21 @@
         "
         style="margin-right: 50px"
       >
-        <el-badge is-dot class="item">
-          <i
-            class="iconfont el-icon-lingdang2"
-            style="font-size: 24px; color: #1296db; cursor: pointer"
-          ></i>
-        </el-badge>
+        <div id="download"></div>
+        <el-tooltip
+          class="item"
+          effect="dark"
+          content="下载答辩、评审安排"
+          placement="bottom-start"
+        >
+          <el-badge class="item">
+            <i
+              class="iconfont el-icon-lingdang2"
+              style="font-size: 24px; color: #1296db; cursor: pointer"
+              @click="downloadArrange"
+            ></i>
+          </el-badge>
+        </el-tooltip>
       </div>
       <span>{{ $store.state.userName + "，您好！" }}</span>
       <i
@@ -183,7 +195,11 @@ export default {
     nextModule: String,
   },
   methods: {
-    back() {},
+    back() {
+      this.$router.replace("/login");
+      sessionStorage.removeItem("id");
+      sessionStorage.removeItem("role");
+    },
     countDown() {
       let nowTime = +new Date();
       let time = +new Date(this.inputTime);
@@ -204,6 +220,46 @@ export default {
         clearInterval(this.timer);
         this.reload();
       }
+    },
+    downloadArrange() {
+      request(
+        "/DownloadArrangeServlet",
+        Qs.stringify({
+          id: this.$store.state.user.id,
+          role: this.$store.state.user.role,
+        }),
+        {
+          "Content-Type": "application/x-www-form-urlencoded",
+        }
+      )
+        .then((res) => {
+          console.log(res);
+          if (res.data.path == null) {
+            this.$message({
+              showClose: true,
+              message: "暂无答辩、评审安排！",
+              type: "warning",
+            });
+          } else {
+            const arrange = document.getElementById("download");
+            const a = document.createElement("a");
+            // a.style.display = "none";
+            a.href =
+              "/apis/FileDownloadServlet?path=" +
+              encodeURI(res.data.path, "utf-8") +
+              "&fileName=" +
+              encodeURI("答辩、评审安排.xls", "utf-8");
+            arrange.appendChild(a);
+            a.onclick = function (e) {
+              e.stopPropagation();
+            };
+            a.click(); //点击下载
+            arrange.removeChild(a);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
     passwordChange() {
       this.showEditPassword = true;
@@ -276,7 +332,7 @@ export default {
           console.log(res);
         })
         .catch((err) => {
-          consoel.log(err);
+          console.log(err);
         });
     },
   },
@@ -302,7 +358,10 @@ export default {
               this.moduleName = res.data.moduleName;
               this.startTime = res.data.startTime;
               this.endTime = res.data.endTime;
-              if( new Date(res.data.endTime) <= new Date() && res.data.moduleName == '选题' ) {
+              if (
+                new Date(res.data.endTime) <= new Date() &&
+                res.data.moduleName == "选题"
+              ) {
                 this.showTime = false;
               }
             })
@@ -375,7 +434,8 @@ export default {
         request(
           "/QueryTeacherServlet",
           Qs.stringify({
-            teacherId: this.$store.state.user.id,
+            id: this.$store.state.user.id,
+            role: 'teacher'
           }),
           {
             "Content-Type": "application/x-www-form-urlencoded",

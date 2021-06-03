@@ -24,6 +24,10 @@
           <i class="iconfont el-icon-pingshenhuizong"></i>
           <span>毕业设计评审汇总</span>
         </el-menu-item>
+        <el-menu-item index="/administrator/uploaddocument">
+          <i class="iconfont el-icon-fabuwendang"></i>
+          <span>发布文档</span>
+        </el-menu-item>
       </el-menu>
       <main style="margin-top: 10px"><router-view></router-view></main>
     </div>

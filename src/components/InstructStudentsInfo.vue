@@ -12,13 +12,46 @@
       >
       <div
         style="
-          height: 220px;
+          height: 300px;
           width: 360px;
           display: flex;
           flex-direction: column;
-          justify-content: space-around;
+          justify-content: center;
         "
       >
+        <section
+          v-show="taskBookTemplete.id == null"
+          style="
+            height: 25px;
+            color: #1296db;
+            background-color: #f5f7fa;
+            padding: 0 5px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            margin-bottom: 5px;
+          "
+        >暂无任务书模板</section>
+        <a
+          v-show="taskBookTemplete.id != null"
+          style="
+            height: 25px;
+            color: #1296db;
+            background-color: #f5f7fa;
+            padding: 0 5px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+          "
+          :href="
+            '/apis/FileDownloadServlet?path=' +
+            encodeURI(taskBookTemplete.path, 'utf-8') +
+            '&fileName=' +
+            encodeURI('任务书模板.doc', 'utf-8')
+          "
+          ><i class="el-icon-document" style="padding-right: 5px"></i
+          >任务书模板</a
+        >
         <el-upload
           drag
           action="/apis/UploadTaskBookServlet"
@@ -49,6 +82,7 @@
             display: flex;
             flex-direction: row;
             align-items: center;
+            margin-top: 5px;
           "
           :href="
             '/apis/FileDownloadServlet?path=' +
@@ -126,6 +160,10 @@ export default {
         topicId: "",
       },
       taskBook: {
+        id: null,
+        path: "",
+      },
+      taskBookTemplete: {
         id: null,
         path: "",
       },
@@ -252,6 +290,13 @@ export default {
                     path: "",
                   }
                 : res.data.taskBook;
+            this.taskBookTemplete =
+              res.data.taskBookTemplete == null
+                ? {
+                    id: null,
+                    path: "",
+                  }
+                : res.data.taskBookTemplete;
           })
           .catch((err) => {
             console.log(err);

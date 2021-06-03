@@ -1,40 +1,6 @@
 <template>
   <div style="width: 900px">
     <div class="flex-row-between" style="margin-bottom: 20px">
-      专业:
-      <el-select
-        clearable
-        v-model="searchArrange.profession"
-        value-key="id"
-        placeholder="请选择专业"
-        size="small"
-        style="width: 200px"
-        @change="professionChange"
-        filterable
-      >
-        <el-option
-          v-for="(item, index) in professions"
-          :key="index"
-          :value="item"
-        >
-        </el-option>
-      </el-select>
-      班级:
-      <el-select
-        clearable
-        v-model="searchArrange.classNumber"
-        placeholder="请选择班级"
-        size="small"
-        style="width: 150px"
-      >
-        <el-option
-          v-for="(item, index) in classNumbers"
-          :key="index"
-          :value="item"
-          :label="item + '班'"
-        >
-        </el-option>
-      </el-select>
       学生姓名:
       <el-select
         clearable
@@ -67,8 +33,6 @@
         >
         </el-option>
       </el-select>
-    </div>
-    <div class="flex-row-between" style="margin-bottom: 20px">
       评审老师:
       <el-select
         clearable
@@ -85,6 +49,53 @@
         >
         </el-option>
       </el-select>
+      答辩地点:
+      <el-select
+        clearable
+        v-model="searchArrange.place"
+        placeholder="请选择地点"
+        size="small"
+        style="width: 130px"
+      >
+        <el-option v-for="(item, index) in places" :key="index" :value="item">
+        </el-option>
+      </el-select>
+    </div>
+    <div class="flex-row-between" style="margin-bottom: 20px">
+      专业:
+      <el-select
+        clearable
+        v-model="searchArrange.profession"
+        value-key="id"
+        placeholder="请选择专业"
+        size="small"
+        style="width: 200px"
+        @change="professionChange"
+        filterable
+      >
+        <el-option
+          v-for="(item, index) in professions"
+          :key="index"
+          :value="item"
+        >
+        </el-option>
+      </el-select>
+      班级:
+      <el-select
+        clearable
+        v-model="searchArrange.classNumber"
+        placeholder="请选择班级"
+        size="small"
+        style="width: 140px"
+      >
+        <el-option
+          v-for="(item, index) in classNumbers"
+          :key="index"
+          :value="item"
+          :label="item + '班'"
+        >
+        </el-option>
+      </el-select>
       答辩时间:
       <el-date-picker
         v-model="searchArrange.dateTime"
@@ -95,16 +106,16 @@
         placeholder="请选择日期时间"
       >
       </el-date-picker>
-      答辩地点:
-      <el-select
-        clearable
-        v-model="searchArrange.place"
-        placeholder="请选择地点"
-        size="small"
+      <el-popconfirm
+        confirm-button-text="确认"
+        cancel-button-text="取消"
+        icon="el-icon-info"
+        icon-color="red"
+        title="将发布当前所有数据，是否确认？"
+        @confirm="arrangeExport()"
       >
-        <el-option v-for="(item, index) in places" :key="index" :value="item">
-        </el-option>
-      </el-select>
+        <el-button slot="reference" type="primary" size="small">发布</el-button>
+      </el-popconfirm>
 
       <el-button type="primary" size="small" @click="arrangeQuery()"
         >查询</el-button
@@ -119,9 +130,6 @@
           arrangeCurrentPage * arrangePageSize
         )
       "
-      ref="multipleTable"
-      @selection-change="handleSelectionChange"
-      @select-all="handleSelectionAll"
     >
       <el-table-column
         align="center"
@@ -343,6 +351,46 @@ export default {
         .catch((err) => {
           console.log(err);
         });
+    },
+    arrangeExport() {
+      if (this.arrangeData.length <= 0) {
+        this.$message({
+          showClose: true,
+          message: "数据为空！",
+          type: "warning",
+        });
+      } else {
+        request(
+          "/ExportReplyArrangeServlet",
+          Qs.stringify({
+            id: this.$store.state.user.id,
+            replyArrange: encodeURI(JSON.stringify(this.arrangeData), "utf-8"),
+          }),
+          {
+            "Content-Type": "application/x-www-form-urlencoded",
+          }
+        )
+          .then((res) => {
+            console.log(res);
+            if (res.data.flag) {
+              this.$message({
+                showClose: true,
+                message: "发布成功！",
+                type: "success",
+              });
+            }
+            else {
+              this.$message({
+                showClose: true,
+                message: "发布失败！",
+                type: "warrning",
+              });
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      }
     },
     professionChange(value) {
       // 联动
